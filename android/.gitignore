@@ -1,14 +1,55 @@
-gradle-wrapper.jar
-/.gradle
+# Flutter/Dart general
+.dart_tool/
+.packages
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.melos_tool/
+
+# Android/iOS
+.gradle
 /captures/
-/gradlew
-/gradlew.bat
-/local.properties
-GeneratedPluginRegistrant.java
+*.iml
+android/.gradle
+android/.idea
+android/key.properties
+android/local.properties
+ios/Pods
+ios/.generated
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Runner.xcworkspace
+
+# Windows/Linux/MacOS
+windows/
+linux/
+macos/
 .cxx/
 
-# Remember to never publicly share your keystore.
-# See https://flutter.dev/to/reference-keystore
-key.properties
-**/*.keystore
-**/*.jks
+# Build output (only web build ignored, rest allowed)
+build/web/
+
+# IDE
+.idea/
+.vscode/
+
+# Executables and metadata
+*.jks
+*.keystore
+*.swp
+*.lock
+*.bak
+*.tmp
+
+# Flutter-specific
+GeneratedPluginRegistrant.java
+
+# Gradle wrappers
+gradlew
+gradlew.bat
+
+# Other keys
+**/key.properties
+
+# If needed, ignore firebase config or sensitive files:
+# lib/firebase_options.dart
