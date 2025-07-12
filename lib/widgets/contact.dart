@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GetInTouchSection extends StatelessWidget {
@@ -7,6 +8,8 @@ class GetInTouchSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 360;
+
     return Container(
       key: navbarKey,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
@@ -48,6 +51,7 @@ class GetInTouchSection extends StatelessWidget {
           ),
           const SizedBox(height: 36),
           Wrap(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             alignment: WrapAlignment.center,
             spacing: 20,
             runSpacing: 20,
@@ -59,7 +63,7 @@ class GetInTouchSection extends StatelessWidget {
               ),
               _ContactButton(
                 icon: Icons.alternate_email,
-                label: "ChinmayB010",
+                label: "@ChinmayB010",
                 url: "https://twitter.com/ChinmayB010",
               ),
               _ContactButton(
@@ -98,58 +102,90 @@ class _ContactButton extends StatefulWidget {
 class _ContactButtonState extends State<_ContactButton> {
   bool _isHovered = false;
 
+  Future<void> _handleTap() async {
+    final uri = Uri.parse(widget.url);
+
+    if (widget.url.startsWith("mailto:")) {
+      // Try to open the mail client
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // If mail client can't be opened, fallback to clipboard
+        await Clipboard.setData(ClipboardData(text: widget.label));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Email copied to clipboard!")),
+          );
+        }
+      }
+    } else {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
-        onTap: () => launchUrl(Uri.parse(widget.url)),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: _isHovered
-                ? const LinearGradient(
-              colors: [Color(0xFF00FFF0), Color(0xFF9F00FF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            )
-                : null,
-            border: Border.all(color: const Color(0xFF00FFF0), width: 1.2),
-            color: _isHovered ? Colors.white.withAlpha(3) : Colors.white.withAlpha(15),
-            boxShadow: _isHovered
-                ? [
-              const BoxShadow(
-                color: Color(0xAA00FFF0),
-                blurRadius: 16,
-                offset: Offset(0, 6),
-              ),
-              const BoxShadow(
-                color: Color(0x669F00FF),
-                blurRadius: 8,
-                offset: Offset(0, -2),
-              ),
-            ]
-                : [],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(widget.icon, size: 20, color: const Color(0xFF00FFF0)),
-              const SizedBox(width: 10),
-              Text(
-                widget.label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'SpaceGrotesk',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+        onTap: _handleTap,
+        child: Tooltip(
+          message: widget.label,
+          waitDuration: const Duration(milliseconds: 400),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: _isHovered
+                  ? const LinearGradient(
+                colors: [Color(0xFF00FFF0), Color(0xFF9F00FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+                  : null,
+              border: Border.all(color: const Color(0xFF00FFF0), width: 1.2),
+              color: _isHovered
+                  ? const Color.fromARGB(8, 255, 255, 255)
+                  : const Color.fromARGB(20, 255, 255, 255),
+              boxShadow: _isHovered
+                  ? [
+                const BoxShadow(
+                  color: Color(0xAA00FFF0),
+                  blurRadius: 16,
+                  offset: Offset(0, 6),
                 ),
-              ),
-            ],
+                const BoxShadow(
+                  color: Color(0x669F00FF),
+                  blurRadius: 8,
+                  offset: Offset(0, -2),
+                ),
+              ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Semantics(
+                  label: widget.label,
+                  child: Icon(widget.icon, size: 20, color: const Color(0xFF00FFF0)),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  widget.label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'SpaceGrotesk',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

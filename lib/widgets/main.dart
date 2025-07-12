@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:portfolio/constants/navigation_helper.dart';
 import 'package:portfolio/constants/size.dart';
 
 class MainSection extends StatelessWidget {
-  const MainSection({super.key});
+  const MainSection({super.key, required this.navbarKeys, required this.context});
+  final List<GlobalKey> navbarKeys;
+  final BuildContext context;
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < kMinDesktopWidth;
-
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 40,
@@ -111,28 +113,31 @@ class MainSection extends StatelessWidget {
 
   Widget _buildButtons({bool isCentered = false}) {
     return Row(
-      mainAxisAlignment: isCentered ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment:
+      isCentered ? MainAxisAlignment.center : MainAxisAlignment.start,
       children: [
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00FFB2),
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          child: const Text("View Projects"),
+        _AnimatedCTAButton(
+          label: "View Projects",
+          icon: Icons.code,
+          onPressed: () {
+            NavigationHelper.scrollToSection(
+              context: context,
+              navIndex: 2,
+              navbarKeys: navbarKeys,
+            );
+          },
         ),
         const SizedBox(width: 20),
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00FFB2),
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          child: const Text("Contact Me"),
+        _AnimatedCTAButton(
+          label: "Contact Me",
+          icon: Icons.mail_outline,
+          onPressed: () {
+            NavigationHelper.scrollToSection(
+              context: context,
+              navIndex: 4,
+              navbarKeys: navbarKeys,
+            );
+          },
         ),
       ],
     );
@@ -161,6 +166,118 @@ class MainSection extends StatelessWidget {
         child: Lottie.asset(
           'assets/animations/dev.json',
           fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedCTAButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onPressed;
+  final IconData icon;
+
+  const _AnimatedCTAButton({
+    required this.label,
+    required this.onPressed,
+    required this.icon,
+  });
+
+  @override
+  State<_AnimatedCTAButton> createState() => _AnimatedCTAButtonState();
+}
+
+class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+      lowerBound: 0.0,
+      upperBound: 0.05,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onHover(bool hovering) {
+    setState(() => _isHovered = hovering);
+    if (hovering) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => _onHover(true),
+      onExit: (_) => _onHover(false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) => Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: _isHovered
+                  ? const LinearGradient(
+                colors: [Color(0xFF00FFF0), Color(0xFF00FFB2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+                  : const LinearGradient(
+                colors: [Color(0xFF00FFB2), Color(0xFF00D6C3)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                BoxShadow(
+                  color: const Color(0x9900FFF0),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+                  : [],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(widget.icon, color: Colors.black, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  widget.label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                    fontFamily: 'SpaceGrotesk',
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

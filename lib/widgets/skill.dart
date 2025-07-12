@@ -16,7 +16,7 @@ class SkillSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
       alignment: Alignment.center,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100), // ✅ Keep centered, max width
+        constraints: const BoxConstraints(maxWidth: 1100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [

@@ -16,14 +16,16 @@ class ProjectSection extends StatelessWidget {
         children: [
           Text(
             'Projects',
-            style: TextStyle(
-              fontSize: 30,
+            style: const TextStyle(
+              fontSize: 32,
               fontFamily: 'SpaceGrotesk',
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF00FFF0),
+              color: Color(0xFF00FFF0),
+              height: 1.2,
+              letterSpacing: 0.5,
               shadows: [
                 Shadow(
-                  color: const Color(0x8800FFF0),
+                  color: Color(0x8800FFF0),
                   blurRadius: 20,
                 ),
               ],
@@ -36,21 +38,19 @@ class ProjectSection extends StatelessWidget {
             const double cardSpacing = 24.0;
 
             int cardsPerRow = (constraints.maxWidth / (cardWidth + cardSpacing)).floor();
-            if (cardsPerRow == 0) cardsPerRow = 1;
+            cardsPerRow = cardsPerRow == 0 ? 1 : cardsPerRow;
 
             double maxWrapWidth = (cardsPerRow * cardWidth) + ((cardsPerRow - 1) * cardSpacing);
 
             if (maxWrapWidth > constraints.maxWidth - (2 * 24)) {
               maxWrapWidth = constraints.maxWidth - (2 * 24);
               cardsPerRow = (maxWrapWidth / (cardWidth + cardSpacing)).floor();
-              if (cardsPerRow == 0) cardsPerRow = 1;
+              cardsPerRow = cardsPerRow == 0 ? 1 : cardsPerRow;
               maxWrapWidth = (cardsPerRow * cardWidth) + ((cardsPerRow - 1) * cardSpacing);
             }
 
             return ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: maxWrapWidth,
-              ),
+              constraints: BoxConstraints(maxWidth: maxWrapWidth),
               child: Wrap(
                 spacing: cardSpacing,
                 runSpacing: cardSpacing,
@@ -74,9 +74,20 @@ class ProjectSection extends StatelessWidget {
               ),
             );
           }),
+          const SizedBox(height: 30),
+          const GitHubCTAButton(),
         ],
       ),
     );
+  }
+}
+
+Future<void> launchURL(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    throw 'Could not launch $url';
   }
 }
 
@@ -111,27 +122,15 @@ class _AnimatedProjectTileWrapperState extends State<_AnimatedProjectTileWrapper
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(
-          delay.inMilliseconds / _animationController.duration!.inMilliseconds,
-          1.0,
-          curve: Curves.easeOutCubic,
-        ),
-      ),
-    );
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Interval(delay.inMilliseconds / _animationController.duration!.inMilliseconds, 1.0, curve: Curves.easeOutCubic),
+    ));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(
-          delay.inMilliseconds / _animationController.duration!.inMilliseconds,
-          1.0,
-          curve: Curves.easeIn,
-        ),
-      ),
-    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Interval(delay.inMilliseconds / _animationController.duration!.inMilliseconds, 1.0, curve: Curves.easeIn),
+    ));
 
     _animationController.forward();
   }
@@ -181,25 +180,13 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
+    _controller = AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _shadowColorAnimation = ColorTween(
-      begin: const Color(0x2200FFF0),
-      end: const Color(0x5500FFF0),
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _shadowBlurAnimation = Tween<double>(begin: 10.0, end: 24.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _shadowColorAnimation = ColorTween(begin: const Color(0x2200FFF0), end: const Color(0x5500FFF0))
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _shadowBlurAnimation = Tween<double>(begin: 10.0, end: 24.0)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -209,26 +196,13 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
   }
 
   void _onEnter(_) {
-    setState(() {
-      isHovered = true;
-    });
+    setState(() => isHovered = true);
     _controller.forward();
   }
 
   void _onExit(_) {
-    setState(() {
-      isHovered = false;
-    });
+    setState(() => isHovered = false);
     _controller.reverse();
-  }
-
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Could not launch $url';
-    }
   }
 
   @override
@@ -236,13 +210,14 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
     return MouseRegion(
       onEnter: _onEnter,
       onExit: _onExit,
+      cursor: SystemMouseCursors.click,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           return Transform.scale(
             scale: _scaleAnimation.value,
             child: GestureDetector(
-              onTap: () async => await _launchURL(widget.url),
+              onTap: () async => await launchURL(widget.url),
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -252,10 +227,7 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF00FFF0),
-                    width: 1.2,
-                  ),
+                  border: Border.all(color: const Color(0xFF00FFF0), width: 1.2),
                   boxShadow: [
                     BoxShadow(
                       color: _shadowColorAnimation.value!,
@@ -277,17 +249,15 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Expanded(
-                      child: Text(
-                        widget.description,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'SpaceGrotesk',
-                          color: Colors.white70,
-                        ),
+                    Text(
+                      widget.description,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'SpaceGrotesk',
+                        color: Colors.white70,
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 3,
                       ),
+                      maxLines: 3,
                     ),
                     const SizedBox(height: 12),
                     if (widget.tags.isNotEmpty)
@@ -302,8 +272,7 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                               backgroundColor: Colors.deepPurple.shade900,
                               labelStyle: const TextStyle(color: Colors.white),
                               visualDensity: VisualDensity.compact,
-                              padding:
-                              const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                             );
                           }).toList(),
                         ),
@@ -311,12 +280,8 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                     Align(
                       alignment: Alignment.bottomRight,
                       child: InkWell(
-                        onTap: () async => await _launchURL(widget.url),
-                        child: const Icon(
-                          Icons.open_in_new,
-                          size: 18,
-                          color: Color(0xFF9F00FF),
-                        ),
+                        onTap: () async => await launchURL(widget.url),
+                        child: const Icon(Icons.open_in_new, size: 18, color: Color(0xFF9F00FF)),
                       ),
                     ),
                   ],
@@ -325,6 +290,103 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class GitHubCTAButton extends StatefulWidget {
+  const GitHubCTAButton({super.key});
+
+  @override
+  State<GitHubCTAButton> createState() => _GitHubCTAButtonState();
+}
+
+class _GitHubCTAButtonState extends State<GitHubCTAButton>
+    with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      lowerBound: 0.0,
+      upperBound: 0.05,
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 1.05).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _launchGitHub() async {
+    final url = Uri.parse('https://github.com/ChinmayBansal010');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _controller.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _controller.reverse();
+      },
+      child: GestureDetector(
+        onTap: _launchGitHub,
+        child: AnimatedBuilder(
+          animation: _scaleAnim,
+          builder: (context, child) => Transform.scale(
+            scale: _scaleAnim.value,
+            child: child,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D1117),
+              border: Border.all(color: const Color(0xFF00FFF0), width: 1),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: _isHovered
+                  ? [
+                BoxShadow(
+                  color: const Color(0x9900FFF0),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.code, color: Color(0xFF00FFF0)),
+                SizedBox(width: 10),
+                Text(
+                  "View more on GitHub",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'SpaceGrotesk',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
