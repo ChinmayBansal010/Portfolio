@@ -8,7 +8,8 @@ class GetInTouchSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 360;
+    final isMobileSmall = MediaQuery.of(context).size.width < 450;
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
     return Container(
       key: navbarKey,
@@ -26,33 +27,30 @@ class GetInTouchSection extends StatelessWidget {
         children: [
           Text(
             "Get in Touch",
-            style: TextStyle(
-              fontSize: 30,
-              fontFamily: 'SpaceGrotesk',
-              fontWeight: FontWeight.bold,
+            style: textTheme.displayLarge?.copyWith(
               color: const Color(0xFF00FFF0),
-              shadows: [
+              shadows: const [
                 Shadow(
-                  color: const Color(0x8800FFF0),
+                  color: Color(0x8800FFF0),
                   blurRadius: 20,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "Have a project in mind, a question to ask, or just want to connect?",
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: textTheme.bodyMedium?.copyWith(
               fontSize: 16,
               color: Colors.white70,
-              fontFamily: 'SpaceGrotesk',
             ),
           ),
           const SizedBox(height: 36),
           Wrap(
-            direction: isMobile ? Axis.vertical : Axis.horizontal,
+            direction: isMobileSmall ? Axis.vertical : Axis.horizontal,
             alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 20,
             runSpacing: 20,
             children: const [
@@ -60,21 +58,25 @@ class GetInTouchSection extends StatelessWidget {
                 icon: Icons.email,
                 label: "chinmay8521@gmail.com",
                 url: "mailto:chinmay8521@gmail.com",
+                color: Color(0xFF00FFF0),
               ),
               _ContactButton(
                 icon: Icons.alternate_email,
                 label: "@ChinmayB010",
                 url: "https://twitter.com/ChinmayB010",
+                color: Color(0xFF9F00FF),
               ),
               _ContactButton(
                 icon: Icons.link,
                 label: "LinkedIn",
                 url: "https://linkedin.com/in/xenoryx",
+                color: Color(0xFF00FFF0),
               ),
               _ContactButton(
                 icon: Icons.code,
                 label: "GitHub",
                 url: "https://github.com/ChinmayBansal010",
+                color: Color(0xFF9F00FF),
               ),
             ],
           ),
@@ -88,11 +90,13 @@ class _ContactButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final String url;
+  final Color color;
 
   const _ContactButton({
     required this.icon,
     required this.label,
     required this.url,
+    required this.color,
   });
 
   @override
@@ -103,66 +107,101 @@ class _ContactButtonState extends State<_ContactButton> {
   bool _isHovered = false;
 
   Future<void> _handleTap() async {
-    final uri = Uri.parse(widget.url);
+    final Uri uri = Uri.parse(widget.url);
 
     if (widget.url.startsWith("mailto:")) {
-      // Try to open the mail client
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // If mail client can't be opened, fallback to clipboard
+      try {
+        if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          // Launched successfully
+        } else {
+          await Clipboard.setData(ClipboardData(text: widget.label));
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  "Email copied to clipboard!",
+                  style: TextStyle(color: Colors.black),
+                ),
+                backgroundColor: Color(0xFF00FFF0),
+              ),
+            );
+          }
+        }
+      } catch (e) {
         await Clipboard.setData(ClipboardData(text: widget.label));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Email copied to clipboard!")),
+            const SnackBar(
+              content: Text(
+                "Failed to open email client. Email copied!",
+                style: TextStyle(color: Colors.black),
+              ),
+              backgroundColor: Color(0xFF00FFF0),
+            ),
           );
         }
       }
     } else {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Could not launch link.",
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final TextTheme textTheme = Theme.of(context).textTheme;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: _handleTap,
         child: Tooltip(
-          message: widget.label,
+          message: 'Click to open/copy: ${widget.label}',
           waitDuration: const Duration(milliseconds: 400),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.identity()..scale(_isHovered ? 1.08 : 1.0),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               gradient: _isHovered
-                  ? const LinearGradient(
-                colors: [Color(0xFF00FFF0), Color(0xFF9F00FF)],
+                  ? LinearGradient(
+                colors: [widget.color, const Color(0xFF9F00FF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
                   : null,
-              border: Border.all(color: const Color(0xFF00FFF0), width: 1.2),
+              border: Border.all(
+                color: _isHovered ? Colors.transparent : widget.color,
+                width: 1.5,
+              ),
               color: _isHovered
-                  ? const Color.fromARGB(8, 255, 255, 255)
+                  ? Colors.transparent
                   : const Color.fromARGB(20, 255, 255, 255),
               boxShadow: _isHovered
                   ? [
-                const BoxShadow(
-                  color: Color(0xAA00FFF0),
-                  blurRadius: 16,
-                  offset: Offset(0, 6),
+                BoxShadow(
+                  color: widget.color.withAlpha(0xAA),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-                const BoxShadow(
-                  color: Color(0x669F00FF),
-                  blurRadius: 8,
-                  offset: Offset(0, -2),
+                BoxShadow(
+                  color: const Color(0x669F00FF),
+                  blurRadius: 10,
+                  offset: const Offset(0, -3),
                 ),
               ]
                   : [],
@@ -170,18 +209,14 @@ class _ContactButtonState extends State<_ContactButton> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Semantics(
-                  label: widget.label,
-                  child: Icon(widget.icon, size: 20, color: const Color(0xFF00FFF0)),
-                ),
-                const SizedBox(width: 10),
+                Icon(widget.icon, size: 22, color: _isHovered ? Colors.black : widget.color),
+                const SizedBox(width: 12),
                 Text(
                   widget.label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'SpaceGrotesk',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: _isHovered ? Colors.black : Colors.white,
                   ),
                 ),
               ],

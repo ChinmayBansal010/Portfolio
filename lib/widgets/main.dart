@@ -24,7 +24,6 @@ class MainSection extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Left Text Section
         Expanded(
           flex: 2,
           child: Column(
@@ -41,7 +40,6 @@ class MainSection extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 40),
-        // Right Lottie Animation
         Expanded(
           flex: 1,
           child: _buildLottieBox(height: 400),
@@ -68,53 +66,70 @@ class MainSection extends StatelessWidget {
   }
 
   Widget _buildGreetingText({bool isCentered = false}) {
-    return Text(
-      "Hi, I’m Chinmay 👋",
-      textAlign: isCentered ? TextAlign.center : TextAlign.start,
-      style: TextStyle(
-        fontSize: isCentered ? 28 : 40,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'SpaceGrotesk',
-        color: const Color(0xFF00FF9F),
-        shadows: [
-          Shadow(
-            color: const Color(0xFF00FF9F).withAlpha(50),
-            blurRadius: 20,
-            offset: const Offset(0, 2),
+    final TextStyle mainTextStyle = Theme.of(context).textTheme.displayLarge!.copyWith(
+      fontSize: isCentered ? 28 : 40,
+      fontWeight: FontWeight.bold,
+      color: const Color(0xFF00FF9F),
+      shadows: [
+        Shadow(
+          color: const Color(0xFF00FF9F).withAlpha(50),
+          blurRadius: 20,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+
+    return Align(
+      alignment: isCentered ? Alignment.center : Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "Hi, I’m Chinmay",
+            textAlign: TextAlign.start,
+            style: mainTextStyle,
+          ),
+          const SizedBox(width: 5),
+          Lottie.asset(
+            'assets/animations/waving_hand.json',
+            height: isCentered ? 80 : 150,
+            width: isCentered ? 80 : 150,
+            repeat: true,
+            fit: BoxFit.contain,
           ),
         ],
       ),
     );
   }
 
+
   Widget _buildSubText({bool isCentered = false}) {
-    return const Text(
+    return Text(
       "AI Enthusiast / ML Practitioner / Android Developer",
-      textAlign: TextAlign.center,
-      style: TextStyle(
+      textAlign: isCentered ? TextAlign.center : TextAlign.start,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
         fontSize: 18,
-        color: Color(0xFF00FFB2),
-        fontFamily: 'SpaceGrotesk',
+        color: const Color(0xFF00FFB2),
       ),
     );
   }
 
   Widget _buildDescription({bool isCentered = false}) {
-    return const Text(
+    return Text(
       "Crafting intelligent, cross-platform apps with stunning UIs and smart brains.",
-      textAlign: TextAlign.center,
-      style: TextStyle(
+      textAlign: isCentered ? TextAlign.center : TextAlign.start,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
         fontSize: 15,
         color: Colors.white70,
-        fontFamily: 'SpaceGrotesk',
       ),
     );
   }
 
   Widget _buildButtons({bool isCentered = false}) {
-    return Row(
-      mainAxisAlignment:
-      isCentered ? MainAxisAlignment.center : MainAxisAlignment.start,
+    return Wrap(
+      alignment: isCentered ? WrapAlignment.center : WrapAlignment.start,
+      spacing: 16,
+      runSpacing: 16,
       children: [
         _AnimatedCTAButton(
           label: "View Projects",
@@ -127,7 +142,6 @@ class MainSection extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(width: 20),
         _AnimatedCTAButton(
           label: "Contact Me",
           icon: Icons.mail_outline,
@@ -148,15 +162,16 @@ class MainSection extends StatelessWidget {
       height: height,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0x14000000), // black with alpha 20
+        color: const Color(0xFF1A1E2B).withAlpha((255 * 0.5).round()),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF00FFF0).withAlpha((255 * 0.2).round()), width: 1),
       ),
       child: ShaderMask(
         shaderCallback: (Rect bounds) {
           return const LinearGradient(
             colors: [
-              Color(0x6600FFB2),
-              Color(0x669F00FF),
+              Color(0x9900FFB2),
+              Color(0x999F00FF),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -198,12 +213,14 @@ class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 200),
       lowerBound: 0.0,
-      upperBound: 0.05,
+      upperBound: 1.0,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(_controller);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
   }
 
   @override
@@ -230,14 +247,15 @@ class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
       child: GestureDetector(
         onTap: widget.onPressed,
         child: AnimatedBuilder(
-          animation: _scaleAnimation,
+          animation: _controller,
           builder: (context, child) => Transform.scale(
             scale: _scaleAnimation.value,
             child: child,
           ),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
             decoration: BoxDecoration(
               gradient: _isHovered
                   ? const LinearGradient(
@@ -253,26 +271,29 @@ class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
               boxShadow: _isHovered
                   ? [
                 BoxShadow(
-                  color: const Color(0x9900FFF0),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
+                  color: const Color(0x9900FFF0).withAlpha((_controller.value * 255 * 0.8).round()),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ]
                   : [],
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isHovered ? Colors.transparent : const Color(0xFF00FFB2).withAlpha((255 * 0.6).round()),
+                width: 1,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(widget.icon, color: Colors.black, size: 18),
-                const SizedBox(width: 8),
+                Icon(widget.icon, color: Colors.black, size: 19),
+                const SizedBox(width: 10),
                 Text(
                   widget.label,
-                  style: const TextStyle(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black,
-                    fontFamily: 'SpaceGrotesk',
                   ),
                 ),
               ],

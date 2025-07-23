@@ -17,7 +17,7 @@ class NavigationHelper {
 
     await Future.delayed(Duration(milliseconds: 50));
 
-    if (!context.mounted) return; // ✅ THIS is important
+    if (!context.mounted) return;
 
     if (navIndex < navbarKeys.length) {
       final key = navbarKeys[navIndex];

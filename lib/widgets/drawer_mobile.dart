@@ -7,39 +7,58 @@ class DrawerMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+
     return Drawer(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: colorScheme.surface,
       child: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Close Icon
-            Padding(
-              padding: const EdgeInsets.only(left: 16, top: 16),
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16, top: 16),
+                child: IconButton(
+                  icon: Icon(Icons.close, color: colorScheme.onSurface),
+                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'Close menu',
+                ),
               ),
             ),
-
             const SizedBox(height: 10),
-
-            // Menu Items
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: navTitles.length,
-                separatorBuilder: (_, __) => const Divider(color: Colors.white10, thickness: 0.5, indent: 20, endIndent: 20),
+                separatorBuilder: (_, __) => Divider(
+                  color: colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                  thickness: 0.5,
+                  indent: 20,
+                  endIndent: 20,
+                ),
                 itemBuilder: (context, i) {
                   return _AnimatedNavItem(
                     icon: navIcons[i],
                     label: navTitles[i],
                     onTap: () {
-                      Navigator.of(context).pop(); // close drawer
-                      onNavItemTap(i); // handle nav tap
+                      Navigator.of(context).pop();
+                      onNavItemTap(i);
                     },
                   );
                 },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                '© 2025 Your Name',
+                textAlign: TextAlign.center,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+                  fontSize: 12,
+                ),
               ),
             ),
           ],
@@ -69,26 +88,25 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
 
   @override
   Widget build(BuildContext context) {
-    final hoverColor = const Color(0x33FFFFFF);
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        color: _isHovered ? hoverColor : Colors.transparent,
+        color: _isHovered ? colorScheme.primary.withAlpha((255 * 0.15).round()) : Colors.transparent,
         child: ListTile(
-          leading: Icon(widget.icon, color: const Color(0xFF00FFF0), size: 22),
+          leading: Icon(widget.icon, color: colorScheme.primary, size: 24),
           title: Text(
             widget.label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'SpaceGrotesk',
+            style: textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           onTap: widget.onTap,
         ),
       ),

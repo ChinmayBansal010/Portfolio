@@ -74,6 +74,9 @@ flutter:
     - assets/fonts/SpaceGrotesk-Bold.ttf
     - assets/fonts/SpaceGrotesk-Medium.ttf
     - assets/animations/dev.json
+    - assets/animations/waving_hand.json
+    - assets/animations/section_separator.json
+    - assets/animations/splash_bg.json
     - assets/skillIcons/python.svg
     - assets/skillIcons/pytorch.svg
     - assets/skillIcons/tensorflow.svg

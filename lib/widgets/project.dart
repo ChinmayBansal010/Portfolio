@@ -33,45 +33,37 @@ class ProjectSection extends StatelessWidget {
           ),
           const SizedBox(height: 40),
           LayoutBuilder(builder: (context, constraints) {
-            const double cardWidth = 400.0;
-            const double cardHeight = 280.0;
             const double cardSpacing = 24.0;
+            return Wrap(
+              spacing: cardSpacing,
+              runSpacing: cardSpacing,
+              alignment: WrapAlignment.center,
+              children: List.generate(projectItems.length, (index) {
+                final project = projectItems[index];
+                return _AnimatedProjectTileWrapper(
+                  index: index,
+                  child: LayoutBuilder(
+                    builder: (context, cardConstraints) {
+                      double maxWidth = cardConstraints.maxWidth < 500
+                          ? cardConstraints.maxWidth
+                          : 400;
 
-            int cardsPerRow = (constraints.maxWidth / (cardWidth + cardSpacing)).floor();
-            cardsPerRow = cardsPerRow == 0 ? 1 : cardsPerRow;
-
-            double maxWrapWidth = (cardsPerRow * cardWidth) + ((cardsPerRow - 1) * cardSpacing);
-
-            if (maxWrapWidth > constraints.maxWidth - (2 * 24)) {
-              maxWrapWidth = constraints.maxWidth - (2 * 24);
-              cardsPerRow = (maxWrapWidth / (cardWidth + cardSpacing)).floor();
-              cardsPerRow = cardsPerRow == 0 ? 1 : cardsPerRow;
-              maxWrapWidth = (cardsPerRow * cardWidth) + ((cardsPerRow - 1) * cardSpacing);
-            }
-
-            return ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWrapWidth),
-              child: Wrap(
-                spacing: cardSpacing,
-                runSpacing: cardSpacing,
-                alignment: WrapAlignment.center,
-                children: List.generate(projectItems.length, (index) {
-                  final project = projectItems[index];
-                  return _AnimatedProjectTileWrapper(
-                    index: index,
-                    child: SizedBox(
-                      width: cardWidth,
-                      height: cardHeight,
-                      child: _ProjectTile(
-                        title: project["title"]!,
-                        description: project["description"]!,
-                        url: project["url"]!,
-                        tags: project["tags"] ?? [],
-                      ),
-                    ),
-                  );
-                }),
-              ),
+                      return ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: 260,
+                          maxWidth: maxWidth,
+                        ),
+                        child: _ProjectTile(
+                          title: project["title"]!,
+                          description: project["description"]!,
+                          url: project["url"]!,
+                          tags: project["tags"] ?? [],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }),
             );
           }),
           const SizedBox(height: 30),
@@ -101,10 +93,13 @@ class _AnimatedProjectTileWrapper extends StatefulWidget {
   });
 
   @override
-  State<_AnimatedProjectTileWrapper> createState() => _AnimatedProjectTileWrapperState();
+  State<_AnimatedProjectTileWrapper> createState() =>
+      _AnimatedProjectTileWrapperState();
 }
 
-class _AnimatedProjectTileWrapperState extends State<_AnimatedProjectTileWrapper> with SingleTickerProviderStateMixin {
+class _AnimatedProjectTileWrapperState
+    extends State<_AnimatedProjectTileWrapper>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -124,12 +119,20 @@ class _AnimatedProjectTileWrapperState extends State<_AnimatedProjectTileWrapper
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Interval(delay.inMilliseconds / _animationController.duration!.inMilliseconds, 1.0, curve: Curves.easeOutCubic),
+      curve: Interval(
+        delay.inMilliseconds / _animationController.duration!.inMilliseconds,
+        1.0,
+        curve: Curves.easeOutCubic,
+      ),
     ));
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Interval(delay.inMilliseconds / _animationController.duration!.inMilliseconds, 1.0, curve: Curves.easeIn),
+      curve: Interval(
+        delay.inMilliseconds / _animationController.duration!.inMilliseconds,
+        1.0,
+        curve: Curves.easeIn,
+      ),
     ));
 
     _animationController.forward();
@@ -170,7 +173,8 @@ class _ProjectTile extends StatefulWidget {
   State<_ProjectTile> createState() => _ProjectTileState();
 }
 
-class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderStateMixin {
+class _ProjectTileState extends State<_ProjectTile>
+    with SingleTickerProviderStateMixin {
   bool isHovered = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -180,11 +184,16 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
+    _controller =
+        AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _shadowColorAnimation = ColorTween(begin: const Color(0x2200FFF0), end: const Color(0x5500FFF0))
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _shadowColorAnimation = ColorTween(
+        begin: const Color(0x2200FFF0), end: const Color(0x5500FFF0))
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
     _shadowBlurAnimation = Tween<double>(begin: 10.0, end: 24.0)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
@@ -207,6 +216,8 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 500;
+
     return MouseRegion(
       onEnter: _onEnter,
       onExit: _onExit,
@@ -255,9 +266,9 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                         fontSize: 14,
                         fontFamily: 'SpaceGrotesk',
                         color: Colors.white70,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 3,
+                      maxLines: isMobile ? 5 : 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 12),
                     if (widget.tags.isNotEmpty)
@@ -272,7 +283,7 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                               backgroundColor: Colors.deepPurple.shade900,
                               labelStyle: const TextStyle(color: Colors.white),
                               visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
                             );
                           }).toList(),
                         ),
@@ -281,7 +292,8 @@ class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderSta
                       alignment: Alignment.bottomRight,
                       child: InkWell(
                         onTap: () async => await launchURL(widget.url),
-                        child: const Icon(Icons.open_in_new, size: 18, color: Color(0xFF9F00FF)),
+                        child: const Icon(Icons.open_in_new,
+                            size: 18, color: Color(0xFF9F00FF)),
                       ),
                     ),
                   ],
