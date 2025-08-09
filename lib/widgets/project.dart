@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:portfolio/constants/project_data.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -173,29 +174,37 @@ class _ProjectTile extends StatefulWidget {
   State<_ProjectTile> createState() => _ProjectTileState();
 }
 
-class _ProjectTileState extends State<_ProjectTile>
-    with SingleTickerProviderStateMixin {
-  bool isHovered = false;
+class _ProjectTileState extends State<_ProjectTile> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<Color?> _shadowColorAnimation;
-  late Animation<double> _shadowBlurAnimation;
+  late Animation<double> _tiltXAnim;
+  late Animation<double> _tiltYAnim;
+
+  double _tiltX = 0;
+  double _tiltY = 0;
+  bool _isHovering = false;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _tiltXAnim = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
 
-    _shadowColorAnimation = ColorTween(
-        begin: const Color(0x2200FFF0), end: const Color(0x5500FFF0))
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _tiltYAnim = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
 
-    _shadowBlurAnimation = Tween<double>(begin: 10.0, end: 24.0)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.addListener(() {
+      setState(() {
+        _tiltX = _tiltXAnim.value;
+        _tiltY = _tiltYAnim.value;
+      });
+    });
   }
 
   @override
@@ -204,104 +213,136 @@ class _ProjectTileState extends State<_ProjectTile>
     super.dispose();
   }
 
-  void _onEnter(_) {
-    setState(() => isHovered = true);
-    _controller.forward();
+  void _onHover(PointerEvent event, Size size) {
+    final center = size.center(Offset.zero);
+    final dx = (event.localPosition.dx - center.dx) / center.dx;
+    final dy = (event.localPosition.dy - center.dy) / center.dy;
+
+    setState(() {
+      _tiltX = dy * -10; // invert Y
+      _tiltY = dx * 10;
+    });
   }
 
-  void _onExit(_) {
-    setState(() => isHovered = false);
-    _controller.reverse();
+  void _onExit() {
+    _tiltXAnim = Tween<double>(begin: _tiltX, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _tiltYAnim = Tween<double>(begin: _tiltY, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward(from: 0);
+  }
+
+  Future<void> _launchURL(String url) async {
+    if (!await launchUrl(Uri.parse(url))) {
+      throw Exception('Could not launch $url');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 500;
-
     return MouseRegion(
-      onEnter: _onEnter,
-      onExit: _onExit,
-      cursor: SystemMouseCursors.click,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: GestureDetector(
-              onTap: () async => await launchURL(widget.url),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F121A), Color(0xFF181C26)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF00FFF0), width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _shadowColorAnimation.value!,
-                      blurRadius: _shadowBlurAnimation.value,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+      onEnter: (_) => setState(() => _isHovering = true),
+      onHover: (event) {
+        final box = context.findRenderObject() as RenderBox;
+        _onHover(event, box.size);
+      },
+      onExit: (_) {
+        setState(() {
+          _isHovering = false;
+          _onExit();
+        });
+      },
+      child: GestureDetector(
+        onTap: () => _launchURL(widget.url),
+        child: Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.001)
+            ..rotateX(_tiltX * pi / 180)
+            ..rotateY(_tiltY * pi / 180),
+          child: AnimatedScale(
+            scale: _isHovering ? 1.05 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1A1E2B), Color(0xFF0D1117)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF00FFF0),
-                        fontFamily: 'SpaceGrotesk',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.description,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'SpaceGrotesk',
-                        color: Colors.white70,
-                      ),
-                      maxLines: isMobile ? 5 : 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 12),
-                    if (widget.tags.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: widget.tags.map((tag) {
-                            return Chip(
-                              label: Text(tag),
-                              backgroundColor: Colors.deepPurple.shade900,
-                              labelStyle: const TextStyle(color: Colors.white),
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                            );
-                          }).toList(),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isHovering
+                      ? const Color(0xFF00FFB2)
+                      : const Color(0xFF00FFF0).withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _isHovering
+                        ? const Color(0xFF00FFB2).withValues(alpha: 0.3)
+                        : Colors.transparent,
+                    blurRadius: 32,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: InkWell(
-                        onTap: () async => await launchURL(widget.url),
-                        child: const Icon(Icons.open_in_new,
-                            size: 18, color: Color(0xFF9F00FF)),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.description,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.tags.map((tag) {
+                      return Chip(
+                        label: Text(tag),
+                        backgroundColor:
+                        const Color(0xFF00FFB2).withValues(alpha: 0.15),
+                        labelStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        side: BorderSide(
+                          color: const Color(0xFF00FFB2).withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

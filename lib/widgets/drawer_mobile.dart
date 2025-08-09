@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:portfolio/constants/nav_items.dart';
 
@@ -33,7 +34,7 @@ class DrawerMobile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: navTitles.length,
                 separatorBuilder: (_, __) => Divider(
-                  color: colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                  color: colorScheme.onSurface.withValues(alpha: 0.1),
                   thickness: 0.5,
                   indent: 20,
                   endIndent: 20,
@@ -56,7 +57,7 @@ class DrawerMobile extends StatelessWidget {
                 '© 2025 Your Name',
                 textAlign: TextAlign.center,
                 style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -85,6 +86,29 @@ class _AnimatedNavItem extends StatefulWidget {
 
 class _AnimatedNavItemState extends State<_AnimatedNavItem> {
   bool _isHovered = false;
+  double _tiltX = 0;
+  double _tiltY = 0;
+
+  void _updateTilt(PointerEvent details) {
+    if (!mounted) return;
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final Offset localPosition = box.globalToLocal(details.position);
+    final Size size = box.size;
+
+    setState(() {
+      _tiltY = (localPosition.dx / size.width - 0.5) * (pi / 22);
+      _tiltX = -(localPosition.dy / size.height - 0.5) * (pi / 22);
+    });
+  }
+
+  void _resetTilt() {
+    if (!mounted) return;
+    setState(() {
+      _isHovered = false;
+      _tiltX = 0;
+      _tiltY = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,21 +117,32 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        color: _isHovered ? colorScheme.primary.withAlpha((255 * 0.15).round()) : Colors.transparent,
-        child: ListTile(
-          leading: Icon(widget.icon, color: colorScheme.primary, size: 24),
-          title: Text(
-            widget.label,
-            style: textTheme.titleMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w500,
+      onHover: _updateTilt,
+      onExit: (_) => _resetTilt(),
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.002)
+          ..rotateX(_tiltX)
+          ..rotateY(_tiltY),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          color: _isHovered
+              ? colorScheme.primary.withValues(alpha: 0.15)
+              : Colors.transparent,
+          child: ListTile(
+            leading: Icon(widget.icon, color: colorScheme.primary, size: 24),
+            title: Text(
+              widget.label,
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
             ),
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            onTap: widget.onTap,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          onTap: widget.onTap,
         ),
       ),
     );

@@ -165,61 +165,65 @@ class _ContactButtonState extends State<_ContactButton> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: Tooltip(
-          message: 'Click to open/copy: ${widget.label}',
-          waitDuration: const Duration(milliseconds: 400),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            transform: Matrix4.identity()..scale(_isHovered ? 1.08 : 1.0),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: _isHovered
-                  ? LinearGradient(
-                colors: [widget.color, const Color(0xFF9F00FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-                  : null,
-              border: Border.all(
-                color: _isHovered ? Colors.transparent : widget.color,
-                width: 1.5,
-              ),
-              color: _isHovered
-                  ? Colors.transparent
-                  : const Color.fromARGB(20, 255, 255, 255),
-              boxShadow: _isHovered
-                  ? [
-                BoxShadow(
-                  color: widget.color.withAlpha(0xAA),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: _handleTap,
+          child: Tooltip(
+            message: 'Click to open/copy: ${widget.label}',
+            waitDuration: const Duration(milliseconds: 400),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.identity()..scale(_isHovered ? 1.08 : 1.0),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: _isHovered
+                    ? LinearGradient(
+                  colors: [widget.color, const Color(0xFF9F00FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                    : null,
+                border: Border.all(
+                  color: _isHovered ? Colors.transparent : widget.color,
+                  width: 1.5,
                 ),
-                BoxShadow(
-                  color: const Color(0x669F00FF),
-                  blurRadius: 10,
-                  offset: const Offset(0, -3),
-                ),
-              ]
-                  : [],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(widget.icon, size: 22, color: _isHovered ? Colors.black : widget.color),
-                const SizedBox(width: 12),
-                Text(
-                  widget.label,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: _isHovered ? Colors.black : Colors.white,
+                color: _isHovered
+                    ? Colors.transparent
+                    : const Color.fromARGB(20, 255, 255, 255),
+                boxShadow: _isHovered
+                    ? [
+                  BoxShadow(
+                    color: widget.color.withAlpha(0xAA),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-              ],
+                  BoxShadow(
+                    color: const Color(0x669F00FF),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
+                  ),
+                ]
+                    : [],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(widget.icon, size: 22, color: _isHovered ? Colors.black : widget.color),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.label,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: _isHovered ? Colors.black : Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

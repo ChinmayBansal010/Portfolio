@@ -14,7 +14,7 @@ class FrostedHeaderWrapper extends StatelessWidget {
     required this.child,
     this.height = 60.0,
     this.blurSigma = 10.0,
-    this.backgroundAlpha = 80, // About 30% transparency
+    this.backgroundAlpha = 30, // About 30% transparency
     this.enableShadow = true,
     this.backgroundColor = Colors.black,
   });

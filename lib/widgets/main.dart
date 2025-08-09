@@ -85,7 +85,7 @@ class MainSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            "Hi, I’m Chinmay",
+            "Hi, I’m Chinmay Bansal",
             textAlign: TextAlign.start,
             style: mainTextStyle,
           ),

@@ -27,7 +27,6 @@ macos/
 .cxx/
 
 # Build output (only web build ignored, rest allowed)
-build/web/
 
 # IDE
 .idea/
