@@ -9,7 +9,7 @@ final List<Map<String, dynamic>> projectItems = [
     "title": "Sign Language Canva",
     "description": "A real-time sign language recognition app that converts hand gestures into text on a live typing canvas using Mediapipe and TensorFlow.",
     "url": "https://github.com/ChinmayBansal010/Sign-Language-Canva",
-    "tags": ["Sign Language", "TensorFlow", "Mediapipe", "Real-Time", "Hand Tracking", "Python", "Typing Canvas"]
+    "tags": ["Sign Language", "TensorFlow", "Mediapipe", "Real-Time", "Hand Tracking", "Python"]
   },
   {
     "title": "Emotion Recognition Music Player",

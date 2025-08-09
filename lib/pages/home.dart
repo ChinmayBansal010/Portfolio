@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     children: [
                       SizedBox(key: navbarKeys[0]),
-                      MainSection(navbarKeys: navbarKeys, context: context),
+                      MainSection(navbarKeys: navbarKeys),
                       const LottieSectionSeparator(),
                       SkillSection(navbarKey: navbarKeys[1]),
                       const LottieSectionSeparator(),
