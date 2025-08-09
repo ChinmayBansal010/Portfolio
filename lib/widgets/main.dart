@@ -199,7 +199,7 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
   }
 
   Widget _buildGreetingText({bool isCentered = false}) {
-    final double fontSize = isCentered ? 28 : 40;
+    final double fontSize = isCentered ? 20 : 40;
     final double lottieSize = fontSize * 2.5; // Adaptive lottie size
 
     final textStyle = Theme.of(context).textTheme.displayLarge!.copyWith(
