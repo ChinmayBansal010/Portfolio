@@ -76,20 +76,5 @@ flutter:
     - assets/fonts/SpaceGrotesk-Regular.ttf
     - assets/fonts/SpaceGrotesk-Bold.ttf
     - assets/fonts/SpaceGrotesk-Medium.ttf
-    - assets/animations/dev.json
-    - assets/animations/waving_hand.json
-    - assets/animations/section_separator.json
-    - assets/animations/splash_bg.json
-    - assets/skillIcons/python.svg
-    - assets/skillIcons/pytorch.svg
-    - assets/skillIcons/tensorflow.svg
-    - assets/skillIcons/numpy.svg
-    - assets/skillIcons/pandas.svg
-    - assets/skillIcons/matplotlib.svg
-    - assets/skillIcons/my-sql.svg
-    - assets/skillIcons/firebase.svg
-    - assets/skillIcons/flutter.svg
-    - assets/skillIcons/dart.svg
-    - assets/skillIcons/c.svg
-    - assets/skillIcons/cpp.svg
-    - assets/skillIcons/figma.svg
+    - assets/animations/
+    - assets/skillIcons/

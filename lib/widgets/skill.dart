@@ -57,47 +57,55 @@ class SkillSection extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildDesktopSkillGroups(BuildContext context) {
-    return categorizedSkills.entries.map((entry) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 40),
-          _buildCapsuleHeader(context, entry.key),
-          const SizedBox(height: 30),
-          Center(
-            child: Wrap(
-              spacing: 32,
-              runSpacing: 24,
-              alignment: WrapAlignment.center,
-              children: entry.value.map((skill) {
-                return SkillCard(
-                  iconPath: skill["img"]!,
-                  label: skill["title"]!,
-                );
-              }).toList(),
-            ),
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.start, // This aligns items at the top of each row
+      spacing: 36, // Horizontal space between the large category columns
+      runSpacing: 50, // Vertical space between the rows of categories
+      children: categorizedSkills.entries.map((entry) {
+        return SizedBox(
+          width: 320, // Give each category column a fixed width
+          child: Column(
+            children: [
+              _buildCapsuleHeader(context, entry.key),
+              const SizedBox(height: 30),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 24, // Horizontal space between skill cards
+                runSpacing: 24, // Vertical space between skill cards
+                children: entry.value.map((skill) {
+                  return SkillCard(
+                    iconPath: skill["img"]!,
+                    label: skill["title"]!,
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
-      );
-    }).toList();
+        );
+      }).toList(),
+    );
   }
 
-  List<Widget> _buildMobileSkillGroups(BuildContext context) {
-    return categorizedSkills.entries.map((entry) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: _ExpandableSkillGroup(
-          title: entry.key,
-          skills: entry.value,
-          capsuleHeaderBuilder: (animation) => _buildCapsuleHeader(
-            context,
-            entry.key,
-            rotationAnimation: animation,
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return Column(
+      children: categorizedSkills.entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: _ExpandableSkillGroup(
+            title: entry.key,
+            skills: entry.value,
+            capsuleHeaderBuilder: (animation) => _buildCapsuleHeader(
+              context,
+              entry.key,
+              rotationAnimation: animation,
+            ),
           ),
-        ),
-      );
-    }).toList();
+        );
+      }).toList(),
+    );
   }
 
   @override
@@ -109,22 +117,27 @@ class SkillSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
       alignment: Alignment.center,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100),
+        constraints: const BoxConstraints(maxWidth: 2000),
+        // The structure is changed here to be unambiguous
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // 1. The section title
             Text(
               'My Skillset',
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 color: const Color(0xFF42F4E8),
                 shadows: [
-                  Shadow(color: const Color(0xFF42F4E8).withValues(alpha: 0.6), blurRadius: 16),
-                  Shadow(color: const Color(0xFF00FFB2).withValues(alpha: 0.4), blurRadius: 4, offset: const Offset(0, 2)),
+                  Shadow(color: const Color(0xFF42F4E8).withAlpha(153), blurRadius: 16),
+                  Shadow(color: const Color(0xFF00FFB2).withAlpha(102), blurRadius: 4, offset: const Offset(0, 2)),
                 ],
               ),
             ),
             const SizedBox(height: 40),
-            ...isWide ? _buildDesktopSkillGroups(context) : _buildMobileSkillGroups(context),
+
+            // 2. The layout logic
+            // We check for screen width and display the appropriate layout
+            if(isWide)  _buildDesktopLayout(context) else _buildMobileLayout(context),
           ],
         ),
       ),

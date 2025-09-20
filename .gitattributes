@@ -1,0 +1,6 @@
+# Ignore build and web outputs in linguist stats
+build/* linguist-vendored
+web/* linguist-vendored
+
+# Make sure Dart is properly recognized
+*.dart linguist-language=Dart
