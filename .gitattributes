@@ -1,3 +1,6 @@
+# Ignore build and web outputs in linguist stats
 build/* linguist-vendored
-dist/* linguist-vendored
-*.jar linguist-language=Java
+web/* linguist-vendored
+
+# Make sure Dart is properly recognized
+*.dart linguist-language=Dart
