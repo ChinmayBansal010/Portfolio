@@ -1,16 +1,74 @@
-# portfolio
+# 🌟 Flutter Portfolio App
 
-A new Flutter project.
+A **personal portfolio application** built using **Flutter & Dart**. This app highlights my skills, projects, and experience with a sleek design and smooth animations. It is cross-platform and can run on **Android, Web, and Windows**.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Features
 
-A few resources to get you started if this is your first Flutter project:
+* 🎨 Modern, responsive UI with animations
+* 🏠 Home screen with personal intro
+* 💼 Project showcase with details
+* 📱 Cross-platform support (Mobile, Web, Desktop)
+* ⚡ Optimized and lightweight
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🛠 Tech Stack
+
+* **Framework:** Flutter
+* **Language:** Dart
+* **Platforms:** Android, Web, Windows
+
+---
+
+## 📂 Folder Structure
+
+```
+.
+├── android/        # Native Android code
+├── assets/         # Images, fonts, icons
+├── build/          # Build outputs (ignored)
+├── lib/            # Main Dart source code
+├── test/           # Unit tests
+├── web/            # Web build outputs (ignored)
+├── windows/        # Windows build files
+└── pubspec.yaml    # Dependencies
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+* Install [Flutter SDK](https://docs.flutter.dev/get-started/install)
+* Verify setup with:
+
+  ```bash
+  flutter doctor
+  ```
+
+### Run the App
+
+```bash
+# Get dependencies
+flutter pub get
+
+# Run on connected device or emulator
+flutter run
+```
+
+---
+
+## 🔮 Future Enhancements
+
+* Detailed project descriptions
+* Contact section with form integration
+* Dark/Light theme toggle
+
+---
+
+## 🙌 Credits
+
+Built with ❤️ using **Flutter & Dart**.
