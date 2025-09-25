@@ -269,7 +269,7 @@ class _InteractiveConstellationBackgroundState
   }
 
   int _calculateDotCount(double width, int layerIndex) {
-    const baseCount = 60.0;
+    const baseCount = 30.0;
     final double scale = (width / 400.0).clamp(1.0, 4.0);
     final count = (baseCount * sqrt(scale)).round();
     return (count / (layerIndex + 1)).round() + (layerIndex * 15);
@@ -302,7 +302,6 @@ class _InteractiveConstellationBackgroundState
             ignoring: true,
             child: Stack(
               children: [
-                // Draw each constellation layer
                 ..._starLayers.map(
                       (layer) => Positioned.fill(
                     child: CustomPaint(
@@ -368,7 +367,7 @@ class _StarLayer {
       y: random.nextDouble(),
       vx: (random.nextDouble() - 0.5) * 0.0001 * (layerIndex + 1),
       vy: (random.nextDouble() - 0.5) * 0.0001 * (layerIndex + 1),
-      radius: random.nextDouble() * (1 + layerIndex) + 1.0,
+      radius: random.nextDouble() * (1 + layerIndex) + 0.9,
     ),
   );
 

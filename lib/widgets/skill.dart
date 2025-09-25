@@ -18,7 +18,7 @@ class SkillSection extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
             gradient: const LinearGradient(
-              colors: [Color(0xFF00FFF0), Color(0xFF9F00FF)],
+              colors: [Color(0xFF00FFF0), Color(0xFF3F9AF6)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -297,10 +297,10 @@ class _SkillCardState extends State<SkillCard> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 800;
-    final double cardWidth = isMobile ? 105 : 130;
-    final double cardHeight = isMobile ? 115 : 140;
-    final double iconSize = isMobile ? 38 : 48;
-    final double fontSize = isMobile ? 13 : 14;
+    final double cardWidth = isMobile ? 100 : 125;
+    final double cardHeight = isMobile ? 110 : 135;
+    final double iconSize = isMobile ? 35 : 45;
+    final double fontSize = isMobile ? 14 : 16;
 
     return AnimatedScale(
       scale: _isHovered ? 1.08 : 1.0,

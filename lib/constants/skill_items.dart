@@ -16,9 +16,8 @@ const Map<String, List<Map<String, String>>> categorizedSkills = {
   "AI / ML Frameworks": [
     {"img": "assets/skillIcons/pytorch.svg", "title": "PyTorch"},
     {"img": "assets/skillIcons/tensorflow.svg", "title": "TensorFlow"},
-    {"img": "assets/skillIcons/numpy.svg", "title": "Numpy"},
-    {"img": "assets/skillIcons/pandas.svg", "title": "Pandas"},
-    {"img": "assets/skillIcons/matplotlib.svg", "title": "MatPlotLib"},
+    {"img": "assets/skillIcons/keras.svg", "title": "Keras"},
+    {"img": "assets/skillIcons/mediapipe.svg", "title": "Mediapipe"},
   ],
   "Databases & Platforms": [
     {"img": "assets/skillIcons/my-sql.svg", "title": "MySQL"},
