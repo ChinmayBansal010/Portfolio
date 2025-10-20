@@ -1,6 +1,12 @@
 final List<Map<String, dynamic>> projectItems = [
   {
-    "title": "Jarvis AI Assistant",
+    "title": "AutoML",
+    "description": "A no-code platform for automated machine learning. Users can upload datasets, visualize data, train multiple models, and compare performance on a detailed results dashboard.",
+    "url": "https://github.com/ChinmayBansal010/AutoML",
+    "tags": ["Python", "FastAPI", "Machine Learning", "Flutter","Automation"]
+  },
+  {
+    "title": "A.D.A.M. (Automated Dynamic Action Manager)",
     "description": "Offline voice-based AI assistant running as an NSSM service with command execution, TTS/STT, and task automation.",
     "url": "https://github.com/ChinmayBansal010/jarvis",
     "tags": ["Python", "AI", "Voice Assistant", "NSSM", "Offline", "Automation", "TTS", "STT"]
@@ -17,10 +23,4 @@ final List<Map<String, dynamic>> projectItems = [
     "url": "https://github.com/ChinmayBansal010/EmotionRecognitionApp",
     "tags": ["Flutter", "Python", "TensorFlow", "Emotion Detection", "Music Player", "AI"]
   },
-  {
-    "title": "Income Tax Calculator",
-    "description": "A Flutter web app that exports structured income tax data using Syncfusion XlsIO and Firebase integration.",
-    "url": "https://github.com/ChinmayBansal010/IncomeTaxCalculator",
-    "tags": ["Flutter", "Web App", "Firebase", "Excel Export", "Syncfusion", "Income Tax"]
-  }
 ];
