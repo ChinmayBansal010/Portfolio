@@ -88,8 +88,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const HomePage(),
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => const HomePage(),
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(
             opacity: animation,
             child: ScaleTransition(

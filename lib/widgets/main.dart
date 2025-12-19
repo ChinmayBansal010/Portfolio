@@ -232,7 +232,7 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
 
   Widget _buildDescription({bool isCentered = false}) {
     return Text(
-      "Crafting intelligent, cross-platform apps with stunning UIs and smart brains.",
+      "Crafting intelligent, cross-platform apps with stunning UIs and building real-time ML systems using Python, OpenCV, Tensorflow and PyTorch.",
       textAlign: isCentered ? TextAlign.center : TextAlign.start,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15, color: Colors.white70),
     );
@@ -269,10 +269,10 @@ class _CyclingSubtext extends StatefulWidget {
 
 class _CyclingSubtextState extends State<_CyclingSubtext> {
   static const List<String> _titles = [
-    "AI Enthusiast",
-    "ML Practitioner",
-    "Android Developer",
-    "Flutter Developer",
+    "AI/ML Developer",
+    "Computer Vision Engineer",
+    "Python & ML Systems Builder",
+    "Flutter Developer (AI-powered Apps)",
   ];
   int _currentIndex = 0;
   Timer? _timer;

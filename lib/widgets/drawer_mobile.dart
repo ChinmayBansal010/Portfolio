@@ -33,7 +33,7 @@ class DrawerMobile extends StatelessWidget {
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: navTitles.length,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (_, _) => Divider(
                   color: colorScheme.onSurface.withValues(alpha: 0.1),
                   thickness: 0.5,
                   indent: 20,

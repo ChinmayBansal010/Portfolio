@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 class GetInTouchSection extends StatelessWidget {
   final GlobalKey navbarKey;
@@ -60,12 +61,12 @@ class GetInTouchSection extends StatelessWidget {
                 url: "mailto:chinmay8521@gmail.com",
                 color: Color(0xFF00FFF0),
               ),
-              _ContactButton(
-                icon: Icons.alternate_email,
-                label: "@ChinmayB010",
-                url: "https://twitter.com/ChinmayB010",
-                color: Color(0xFF9F00FF),
-              ),
+              // _ContactButton(
+              //   icon: Icons.alternate_email,
+              //   label: "@ChinmayB010",
+              //   url: "https://twitter.com/ChinmayB010",
+              //   color: Color(0xFF9F00FF),
+              // ),
               _ContactButton(
                 icon: Icons.link,
                 label: "LinkedIn",
@@ -111,8 +112,8 @@ class _ContactButtonState extends State<_ContactButton> {
 
     if (widget.url.startsWith("mailto:")) {
       try {
-        if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-          // Launched successfully
+        if (await launchUrl(uri, mode: LaunchMode.platformDefault)) {
+          await Clipboard.setData(ClipboardData(text: widget.label));
         } else {
           await Clipboard.setData(ClipboardData(text: widget.label));
           if (mounted) {
@@ -142,7 +143,7 @@ class _ContactButtonState extends State<_ContactButton> {
         }
       }
     } else {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!await launchUrl(uri, mode: LaunchMode.platformDefault)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -176,7 +177,7 @@ class _ContactButtonState extends State<_ContactButton> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
-              transform: Matrix4.identity()..scale(_isHovered ? 1.08 : 1.0),
+              transform: Matrix4.identity()..scaleByVector3(_isHovered ?  Vector3(1.08, 1.08, 1.0) : Vector3(1.0, 1.0, 1.0)),
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
