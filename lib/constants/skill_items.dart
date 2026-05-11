@@ -1,3 +1,47 @@
+import 'package:flutter/material.dart';
+
+const String skillSectionTitle = 'The tools I use to design, build, and ship products.';
+const String skillSectionDescription =
+    'The stack is organized by delivery function so recruiters, collaborators, and clients can quickly understand where I contribute across UI, backend, and ML implementation.';
+
+const Map<String, ({IconData icon, String summary})> skillCategoryMeta = {
+  'Programming Languages': (
+    icon: Icons.code_rounded,
+    summary:
+        'Core languages used for application logic, data handling, and systems work.',
+  ),
+  'App Development': (
+    icon: Icons.phone_android_rounded,
+    summary:
+        'Cross-platform interface work focused on fluid, maintainable user experiences.',
+  ),
+  'Backend Development': (
+    icon: Icons.dns_rounded,
+    summary:
+        'Lightweight service layers, API design, and integration-friendly backend tooling.',
+  ),
+  'AI / ML Frameworks': (
+    icon: Icons.psychology_alt_rounded,
+    summary:
+        'Libraries used for training, inference, real-time detection, and experimentation.',
+  ),
+  'Databases & Platforms': (
+    icon: Icons.storage_rounded,
+    summary:
+        'Persistence, managed services, and supporting cloud tools for product delivery.',
+  ),
+  'Deployment & Hosting': (
+    icon: Icons.rocket_launch_rounded,
+    summary:
+        'Platforms used to ship builds, backend services, and working demos quickly.',
+  ),
+  'Design & Prototyping': (
+    icon: Icons.design_services_rounded,
+    summary:
+        'Interface planning and iteration tools that support product polish and handoff.',
+  ),
+};
+
 const Map<String, List<Map<String, String>>> categorizedSkills = {
   "Programming Languages": [
     {"img": "assets/skillIcons/python.svg", "title": "Python"},

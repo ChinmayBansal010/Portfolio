@@ -1,93 +1,42 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:portfolio/constants/navigation_helper.dart';
-import 'package:portfolio/constants/size.dart';
 import 'dart:math';
 
-class CascadingText extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-  final bool startAnimation;
-  final Duration staggerDelay;
-
-  const CascadingText({
-    super.key,
-    required this.text,
-    required this.style,
-    required this.startAnimation,
-    this.staggerDelay = Duration.zero,
-  });
-
-  @override
-  State<CascadingText> createState() => _CascadingTextState();
-}
-
-class _CascadingTextState extends State<CascadingText> {
-  final List<bool> _showCharacters = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _showCharacters.addAll(List.filled(widget.text.length, false));
-    if (widget.startAnimation) {
-      _triggerAnimation();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant CascadingText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.startAnimation && !oldWidget.startAnimation) {
-      _triggerAnimation();
-    }
-  }
-
-  void _triggerAnimation() async {
-    await Future.delayed(widget.staggerDelay);
-    for (int i = 0; i < widget.text.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 35));
-      if (!mounted) return;
-      setState(() => _showCharacters[i] = true);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(widget.text.length, (index) {
-        return AnimatedOpacity(
-          opacity: _showCharacters[index] ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 400),
-          child: AnimatedSlide(
-            offset: _showCharacters[index] ? Offset.zero : const Offset(0, 0.5),
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutCubic,
-            child: Text(widget.text[index], style: widget.style),
-          ),
-        );
-      }),
-    );
-  }
-}
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lottie/lottie.dart';
+import 'package:portfolio/constants/colors.dart';
+import 'package:portfolio/constants/navigation_helper.dart';
+import 'package:portfolio/constants/project_data.dart';
+import 'package:portfolio/constants/size.dart';
+import 'package:portfolio/constants/skill_items.dart';
 
 class MainSection extends StatefulWidget {
   const MainSection({super.key, required this.navbarKeys});
+
   final List<GlobalKey> navbarKeys;
 
   @override
   State<MainSection> createState() => _MainSectionState();
 }
 
-class _MainSectionState extends State<MainSection> with TickerProviderStateMixin {
-  late AnimationController _entranceController;
+class _MainSectionState extends State<MainSection>
+    with TickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final AnimationController _orbitController;
 
   @override
   void initState() {
     super.initState();
-    _entranceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
-    Future.delayed(const Duration(milliseconds: 200), () {
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _orbitController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+
+    Future.delayed(const Duration(milliseconds: 180), () {
       if (mounted) {
         _entranceController.forward();
       }
@@ -97,18 +46,27 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
   @override
   void dispose() {
     _entranceController.dispose();
+    _orbitController.dispose();
     super.dispose();
   }
 
-  Widget _buildAnimatedChild({required Widget child, required double intervalStart, required Offset slideOffset}) {
+  Widget _buildAnimatedChild({
+    required Widget child,
+    required double intervalStart,
+    required Offset slideOffset,
+  }) {
     final animation = CurvedAnimation(
       parent: _entranceController,
       curve: Interval(intervalStart, 1.0, curve: Curves.easeOutCubic),
     );
+
     return FadeTransition(
       opacity: animation,
       child: SlideTransition(
-        position: Tween<Offset>(begin: slideOffset, end: Offset.zero).animate(animation),
+        position: Tween<Offset>(
+          begin: slideOffset,
+          end: Offset.zero,
+        ).animate(animation),
         child: child,
       ),
     );
@@ -117,12 +75,44 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < kMinDesktopWidth;
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 24 : 40,
-        vertical: isMobile ? 40 : 60,
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 20 : 32,
+        isMobile ? 32 : 46,
+        isMobile ? 20 : 32,
+        isMobile ? 42 : 54,
       ),
-      child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1240),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.surfaceGlass, AppColors.backgroundElevated],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: AppColors.borderStrong),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 30,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              const Positioned(top: 0, right: 0, child: _HeroGlow()),
+              Padding(
+                padding: EdgeInsets.all(isMobile ? 22 : 34),
+                child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -131,27 +121,64 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          flex: 2,
+          flex: 6,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAnimatedChild(intervalStart: 0.2, slideOffset: const Offset(0, 0.5), child: _buildGreetingText()),
-              const SizedBox(height: 16),
-              _buildAnimatedChild(intervalStart: 0.4, slideOffset: const Offset(0, 0.5), child: _buildSubText()),
-              const SizedBox(height: 20),
-              _buildAnimatedChild(intervalStart: 0.5, slideOffset: const Offset(0, 0.5), child: _buildDescription()),
-              const SizedBox(height: 30),
-              _buildAnimatedChild(intervalStart: 0.6, slideOffset: const Offset(0, 0.5), child: _buildButtons()),
+              _buildAnimatedChild(
+                intervalStart: 0.0,
+                slideOffset: const Offset(0, 0.25),
+                child: const _SectionBadge(
+                  label: 'ENGINEERING PORTFOLIO',
+                  icon: Icons.grid_view_rounded,
+                ),
+              ),
+              const SizedBox(height: 18),
+              _buildAnimatedChild(
+                intervalStart: 0.08,
+                slideOffset: const Offset(0, 0.25),
+                child: _buildHeadline(),
+              ),
+              const SizedBox(height: 18),
+              _buildAnimatedChild(
+                intervalStart: 0.18,
+                slideOffset: const Offset(0, 0.25),
+                child: _buildSubText(),
+              ),
+              const SizedBox(height: 22),
+              _buildAnimatedChild(
+                intervalStart: 0.28,
+                slideOffset: const Offset(0, 0.25),
+                child: _buildDescription(),
+              ),
+              const SizedBox(height: 24),
+              _buildAnimatedChild(
+                intervalStart: 0.32,
+                slideOffset: const Offset(0, 0.2),
+                child: const _HeroSystemStats(),
+              ),
+              const SizedBox(height: 28),
+              _buildAnimatedChild(
+                intervalStart: 0.38,
+                slideOffset: const Offset(0, 0.2),
+                child: _buildDashboardMetrics(),
+              ),
+              const SizedBox(height: 32),
+              _buildAnimatedChild(
+                intervalStart: 0.48,
+                slideOffset: const Offset(0, 0.18),
+                child: _buildButtons(),
+              ),
             ],
           ),
         ),
-        const SizedBox(width: 40),
+        const SizedBox(width: 36),
         Expanded(
-          flex: 1,
+          flex: 4,
           child: _buildAnimatedChild(
-            intervalStart: 0.0,
-            slideOffset: Offset.zero,
-            child: _buildLottieBox(height: 400),
+            intervalStart: 0.1,
+            slideOffset: const Offset(0.08, 0),
+            child: _HeroOverviewPanel(orbitController: _orbitController),
           ),
         ),
       ],
@@ -160,99 +187,555 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
 
   Widget _buildMobileLayout() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildAnimatedChild(intervalStart: 0.0, slideOffset: Offset.zero, child: _buildLottieBox(height: 250)),
-        const SizedBox(height: 30),
-        _buildAnimatedChild(intervalStart: 0.3, slideOffset: const Offset(0, 0.5), child: _buildGreetingText(isCentered: true)),
+        _buildAnimatedChild(
+          intervalStart: 0.0,
+          slideOffset: const Offset(0, 0.25),
+          child: const _SectionBadge(
+            label: 'ENGINEERING PORTFOLIO',
+            icon: Icons.grid_view_rounded,
+          ),
+        ),
+        const SizedBox(height: 18),
+        _buildAnimatedChild(
+          intervalStart: 0.08,
+          slideOffset: const Offset(0, 0.25),
+          child: _buildHeadline(isMobile: true),
+        ),
         const SizedBox(height: 16),
-        _buildAnimatedChild(intervalStart: 0.4, slideOffset: const Offset(0, 0.5), child: _buildSubText(isCentered: true)),
-        const SizedBox(height: 20),
-        _buildAnimatedChild(intervalStart: 0.5, slideOffset: const Offset(0, 0.5), child: _buildDescription(isCentered: true)),
-        const SizedBox(height: 30),
-        _buildAnimatedChild(intervalStart: 0.6, slideOffset: const Offset(0, 0.5), child: _buildButtons(isCentered: true)),
+        _buildAnimatedChild(
+          intervalStart: 0.18,
+          slideOffset: const Offset(0, 0.25),
+          child: _buildSubText(),
+        ),
+        const SizedBox(height: 16),
+        _buildAnimatedChild(
+          intervalStart: 0.28,
+          slideOffset: const Offset(0, 0.25),
+          child: _buildDescription(),
+        ),
+        const SizedBox(height: 24),
+        _buildAnimatedChild(
+          intervalStart: 0.36,
+          slideOffset: const Offset(0, 0.2),
+          child: _buildDashboardMetrics(),
+        ),
+        const SizedBox(height: 26),
+        _buildAnimatedChild(
+          intervalStart: 0.44,
+          slideOffset: const Offset(0, 0.18),
+          child: _buildButtons(isCentered: false),
+        ),
+        const SizedBox(height: 28),
+        _buildAnimatedChild(
+          intervalStart: 0.14,
+          slideOffset: const Offset(0, 0.12),
+          child: _HeroOverviewPanel(orbitController: _orbitController),
+        ),
       ],
     );
   }
 
-  Widget _buildLottieBox({required double height}) {
-    return Container(
-      height: height,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1E2B).withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF00FFF0).withValues(alpha: 0.2), width: 1),
-      ),
-      child: ShaderMask(
-        shaderCallback: (Rect bounds) {
-          return const LinearGradient(
-            colors: [Color(0x9900FFB2), Color(0x999F00FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds);
-        },
-        blendMode: BlendMode.srcATop,
-        child: Lottie.asset('assets/animations/dev.json', fit: BoxFit.contain),
-      ),
-    );
-  }
-
-  Widget _buildGreetingText({bool isCentered = false}) {
-    final double fontSize = isCentered ? 20 : 40;
-    final double lottieSize = fontSize * 2.5; // Adaptive lottie size
-
-    final textStyle = Theme.of(context).textTheme.displayLarge!.copyWith(
-      fontSize: fontSize,
-      fontWeight: FontWeight.bold,
-      color: const Color(0xFF00FF9F),
-      shadows: [Shadow(color: const Color(0xFF00FF9F).withValues(alpha: 0.2), blurRadius: 20)],
-    );
-
-    return Align(
-      alignment: isCentered ? Alignment.center : Alignment.centerLeft,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CascadingText(text: "Hi, I’m Chinmay Bansal ", startAnimation: true, style: textStyle),
-          Lottie.asset(
-            'assets/animations/waving_hand.json',
-            height: lottieSize,
-            width: lottieSize,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubText({bool isCentered = false}) {
-    return _CyclingSubtext(isCentered: isCentered);
-  }
-
-  Widget _buildDescription({bool isCentered = false}) {
+  Widget _buildHeadline({bool isMobile = false}) {
     return Text(
-      "Crafting intelligent, cross-platform apps with stunning UIs and building real-time ML systems using Python, OpenCV, Tensorflow and PyTorch.",
-      textAlign: isCentered ? TextAlign.center : TextAlign.start,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15, color: Colors.white70),
+      'Building polished Flutter interfaces and practical machine learning products.',
+      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+        fontSize: isMobile ? 34 : 52,
+        fontWeight: FontWeight.w700,
+        height: 1.08,
+        letterSpacing: -1.2,
+      ),
+    );
+  }
+
+  Widget _buildSubText() {
+    return const _CyclingSubtext();
+  }
+
+  Widget _buildDescription() {
+    return Text(
+      'I work across application UI, backend APIs, and real-time ML workflows, with an emphasis on clean execution, responsive user experience, and production-ready structure.',
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+        fontSize: 15.5,
+        height: 1.75,
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+
+  Widget _buildDashboardMetrics() {
+    final totalSkills = categorizedSkills.values.fold<int>(
+      0,
+      (total, items) => total + items.length,
+    );
+
+    return Wrap(
+      spacing: 14,
+      runSpacing: 14,
+      children: [
+        _MetricPill(
+          value: '${projectItems.length}+',
+          label: 'featured builds',
+          icon: Icons.rocket_launch_outlined,
+        ),
+        _MetricPill(
+          value: '${categorizedSkills.length}',
+          label: 'skill domains',
+          icon: Icons.dashboard_outlined,
+        ),
+        _MetricPill(
+          value: '$totalSkills',
+          label: 'tools and stacks',
+          icon: Icons.layers_outlined,
+        ),
+      ],
     );
   }
 
   Widget _buildButtons({bool isCentered = false}) {
     return Wrap(
       alignment: isCentered ? WrapAlignment.center : WrapAlignment.start,
-      spacing: 16,
-      runSpacing: 16,
+      spacing: 14,
+      runSpacing: 14,
       children: [
         _AnimatedCTAButton(
-          label: "View Projects",
-          icon: Icons.code,
-          onPressed: () => NavigationHelper.scrollToSection(context: context, navIndex: 2, navbarKeys: widget.navbarKeys),
+          label: 'View Projects',
+          icon: Icons.arrow_outward_rounded,
+          isPrimary: true,
+          onPressed: () => NavigationHelper.scrollToSection(
+            context: context,
+            navIndex: 2,
+            navbarKeys: widget.navbarKeys,
+          ),
         ),
         _AnimatedCTAButton(
-          label: "Contact Me",
-          icon: Icons.mail_outline,
-          onPressed: () => NavigationHelper.scrollToSection(context: context, navIndex: 4, navbarKeys: widget.navbarKeys),
+          label: 'Explore Skills',
+          icon: Icons.analytics_outlined,
+          onPressed: () => NavigationHelper.scrollToSection(
+            context: context,
+            navIndex: 1,
+            navbarKeys: widget.navbarKeys,
+          ),
+        ),
+        _AnimatedCTAButton(
+          label: 'Contact Me',
+          icon: Icons.mail_outline_rounded,
+          onPressed: () => NavigationHelper.scrollToSection(
+            context: context,
+            navIndex: 4,
+            navbarKeys: widget.navbarKeys,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScanningLineEffect extends StatelessWidget {
+  const _ScanningLineEffect();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            Container().animate(onPlay: (c) => c.repeat()).custom(
+              duration: 3.seconds,
+              builder: (context, value, child) {
+                return Positioned(
+                  top: value * constraints.maxHeight,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 2,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          AppColors.accent.withValues(alpha: 0.5),
+                          AppColors.accent,
+                          AppColors.accent.withValues(alpha: 0.5),
+                          Colors.transparent,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _HeroGlow extends StatelessWidget {
+  const _HeroGlow();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        height: 240,
+        width: 240,
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            colors: [
+              AppColors.accentSoft.withValues(alpha: 0.22),
+              Colors.transparent,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroSystemStats extends StatelessWidget {
+  const _HeroSystemStats();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.24),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StatIndicator(label: "UI ENGINE", value: "STABLE", color: AppColors.success),
+          _divider(),
+          _StatIndicator(label: "ML CORE", value: "ACTIVE", color: AppColors.accent),
+          _divider(),
+          _StatIndicator(label: "LATENCY", value: "14ms", color: AppColors.accentSoft),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() => Container(
+        height: 16,
+        width: 1,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        color: AppColors.border,
+      );
+}
+
+class _StatIndicator extends StatelessWidget {
+  const _StatIndicator({required this.label, required this.value, required this.color});
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textMuted,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+            ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(duration: 800.ms),
+            const SizedBox(width: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionBadge extends StatelessWidget {
+  const _SectionBadge({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.borderStrong),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.accent),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: AppColors.textSecondary,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
+  const _MetricPill({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              gradient: AppColors.accentGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.background),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroOverviewPanel extends StatelessWidget {
+  const _HeroOverviewPanel({required this.orbitController});
+
+  final AnimationController orbitController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.borderStrong),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Capability Overview',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Active',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 220,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                colors: [AppColors.surfaceAlt, AppColors.backgroundElevated],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: AnimatedBuilder(
+              animation: orbitController,
+              builder: (context, child) {
+                final angle = orbitController.value * 2 * pi;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(
+                      top: 26 + sin(angle) * 8,
+                      right: 34 + cos(angle) * 8,
+                      child: _StatusDot(color: AppColors.accentSoft),
+                    ),
+                    Positioned(
+                      bottom: 28 + cos(angle) * 8,
+                      left: 36 + sin(angle) * 8,
+                      child: _StatusDot(color: AppColors.accentSecondary),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ShaderMask(
+                        shaderCallback: (bounds) {
+                          return AppColors.accentGradientStrong.createShader(
+                            bounds,
+                          );
+                        },
+                        blendMode: BlendMode.srcATop,
+                        child: Lottie.asset(
+                          'assets/animations/dev.json',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 18),
+          const _OverviewRow(
+            label: 'Focus',
+            value: 'Flutter interfaces, API-backed products, ML pipelines',
+          ),
+          const SizedBox(height: 12),
+          const _OverviewRow(
+            label: 'Strength',
+            value: 'Combining polished UX with real-time intelligence features',
+          ),
+          const SizedBox(height: 12),
+          const _OverviewRow(
+            label: 'Approach',
+            value: 'Structured, fast-loading, user-centered implementation',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 12,
+      width: 12,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.45), blurRadius: 14),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewRow extends StatelessWidget {
+  const _OverviewRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 78,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.55,
+            ),
+          ),
         ),
       ],
     );
@@ -260,8 +743,7 @@ class _MainSectionState extends State<MainSection> with TickerProviderStateMixin
 }
 
 class _CyclingSubtext extends StatefulWidget {
-  final bool isCentered;
-  const _CyclingSubtext({required this.isCentered});
+  const _CyclingSubtext();
 
   @override
   State<_CyclingSubtext> createState() => _CyclingSubtextState();
@@ -269,18 +751,19 @@ class _CyclingSubtext extends StatefulWidget {
 
 class _CyclingSubtextState extends State<_CyclingSubtext> {
   static const List<String> _titles = [
-    "AI/ML Developer",
-    "Computer Vision Engineer",
-    "Python & ML Systems Builder",
-    "Flutter Developer (AI-powered Apps)",
+    'Flutter Developer',
+    'Machine Learning Builder',
+    'Computer Vision Engineer',
+    'Product-Focused Problem Solver',
   ];
+
   int _currentIndex = 0;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 2200), (timer) {
       if (mounted) {
         setState(() => _currentIndex = (_currentIndex + 1) % _titles.length);
       }
@@ -295,15 +778,20 @@ class _CyclingSubtextState extends State<_CyclingSubtext> {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18, color: const Color(0xFF00FFB2));
+    final style = Theme.of(context).textTheme.titleMedium?.copyWith(
+      fontSize: 18,
+      color: AppColors.accent,
+      fontWeight: FontWeight.w600,
+    );
+
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 450),
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: child.key == ValueKey(_currentIndex) ? const Offset(0, 0.5) : const Offset(0, -0.5),
+              begin: const Offset(0, 0.18),
               end: Offset.zero,
             ).animate(animation),
             child: child,
@@ -313,7 +801,6 @@ class _CyclingSubtextState extends State<_CyclingSubtext> {
       child: Text(
         _titles[_currentIndex],
         key: ValueKey(_currentIndex),
-        textAlign: widget.isCentered ? TextAlign.center : TextAlign.start,
         style: style,
       ),
     );
@@ -321,220 +808,122 @@ class _CyclingSubtextState extends State<_CyclingSubtext> {
 }
 
 class _AnimatedCTAButton extends StatefulWidget {
+  const _AnimatedCTAButton({
+    required this.label,
+    required this.onPressed,
+    required this.icon,
+    this.isPrimary = false,
+  });
+
   final String label;
   final VoidCallback onPressed;
   final IconData icon;
-
-  const _AnimatedCTAButton({required this.label, required this.onPressed, required this.icon});
+  final bool isPrimary;
 
   @override
   State<_AnimatedCTAButton> createState() => _AnimatedCTAButtonState();
 }
 
-class _AnimatedCTAButtonState extends State<_AnimatedCTAButton> with TickerProviderStateMixin {
-  late final AnimationController _scaleController;
-  late final AnimationController _shineController;
+class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _hoverController;
   bool _isHovered = false;
-  Offset _mousePos = Offset.zero;
 
   @override
   void initState() {
     super.initState();
-    _scaleController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _shineController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
   }
 
   @override
   void dispose() {
-    _scaleController.dispose();
-    _shineController.dispose();
+    _hoverController.dispose();
     super.dispose();
   }
 
-  void _onHover(bool hovering) {
+  void _handleHover(bool hovering) {
     setState(() => _isHovered = hovering);
     if (hovering) {
-      _scaleController.forward();
-      _shineController.forward(from: 0.0);
+      _hoverController.forward();
     } else {
-      _scaleController.reverse();
+      _hoverController.reverse();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => _onHover(true),
-      onExit: (_) {
-        _onHover(false);
-        setState(() => _mousePos = Offset.zero);
-      },
-      onHover: (event) => setState(() => _mousePos = event.localPosition),
-      cursor: SystemMouseCursors.click,
-      child: LayoutBuilder(builder: (context, constraints) {
-        final center = constraints.biggest.center(Offset.zero);
-        final translate = _isHovered ? Offset.fromDirection((_mousePos - center).direction, min((_mousePos - center).distance, 8)) : Offset.zero;
+    final isPrimary = widget.isPrimary;
 
-        return TweenAnimationBuilder<Offset>(
-          tween: Tween<Offset>(begin: Offset.zero, end: translate),
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-          builder: (context, offset, child) {
+    return MouseRegion(
+      onEnter: (_) => _handleHover(true),
+      onExit: (_) => _handleHover(false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedBuilder(
+          animation: _hoverController,
+          builder: (context, child) {
             return Transform.translate(
-              offset: offset,
+              offset: Offset(0, -3 * _hoverController.value),
               child: child,
             );
           },
-          child: GestureDetector(
-            onTap: () {
-              _showParticleBurst();
-              widget.onPressed();
-            },
-            child: AnimatedBuilder(
-              animation: _scaleController,
-              builder: (context, child) => Transform.scale(scale: 1 + (_scaleController.value * 0.05), child: child),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _isHovered ? Colors.transparent : const Color(0xFF00FFB2).withValues(alpha: 0.6), width: 1),
-                  boxShadow: _isHovered
-                      ? [BoxShadow(color: const Color(0xFF00FFF0).withValues(alpha: 0.5), blurRadius: 16, offset: const Offset(0, 4))]
-                      : [],
-                  gradient: LinearGradient(
-                    colors: _isHovered
-                        ? [const Color(0xFF00FFF0), const Color(0xFF00FFB2)]
-                        : [const Color(0xFF00FFB2), const Color(0xFF00D6C3)],
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: isPrimary ? AppColors.accentGradient : null,
+              color: isPrimary
+                  ? null
+                  : (_isHovered
+                        ? AppColors.surface
+                        : AppColors.background.withValues(alpha: 0.2)),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isPrimary ? Colors.transparent : AppColors.borderStrong,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color:
+                            (isPrimary
+                                    ? AppColors.accent
+                                    : AppColors.accentSoft)
+                                .withValues(alpha: 0.18),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  widget.icon,
+                  size: 18,
+                  color: isPrimary
+                      ? AppColors.background
+                      : AppColors.textPrimary,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  widget.label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isPrimary
+                        ? AppColors.background
+                        : AppColors.textPrimary,
                   ),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: AnimatedBuilder(
-                        animation: _shineController,
-                        builder: (context, child) {
-                          return Transform.translate(
-                            offset: Offset(constraints.maxWidth * -1.5 * (1 - _shineController.value), 0),
-                            child: child,
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.white.withValues(alpha: 0.0), Colors.white.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.0)],
-                              stops: const [0.0, 0.5, 1.0],
-                              transform: const GradientRotation(pi / 4),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(widget.icon, color: Colors.black, size: 19),
-                        const SizedBox(width: 10),
-                        Text(
-                          widget.label,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
-        );
-      }),
-    );
-  }
-
-  void _showParticleBurst() {
-    final overlay = Overlay.of(context);
-    final renderBox = context.findRenderObject() as RenderBox;
-    final position = renderBox.localToGlobal(renderBox.size.center(Offset.zero));
-    final entry = OverlayEntry(
-      builder: (context) => ParticleBurst(position: position),
-    );
-    overlay.insert(entry);
-    Future.delayed(const Duration(seconds: 1), () => entry.remove());
-  }
-}
-
-class ParticleBurst extends StatefulWidget {
-  final Offset position;
-  const ParticleBurst({super.key, required this.position});
-
-  @override
-  State<ParticleBurst> createState() => _ParticleBurstState();
-}
-
-class _ParticleBurstState extends State<ParticleBurst> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  final List<_Particle> _particles = [];
-  final Random _random = Random();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..forward();
-    final colors = [const Color(0xFF00FFF0), const Color(0xFF00FFB2), const Color(0xFF9F00FF), Colors.white];
-    for (int i = 0; i < 30; i++) {
-      final angle = _random.nextDouble() * 2 * pi;
-      final speed = _random.nextDouble() * 5 + 2;
-      _particles.add(_Particle(
-        color: colors[_random.nextInt(colors.length)],
-        velocity: Offset(cos(angle) * speed, sin(angle) * speed),
-      ));
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: widget.position.dx,
-      top: widget.position.dy,
-      child: AnimatedBuilder(
-        animation: CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-        builder: (context, child) {
-          return Stack(
-            children: _particles.map((p) {
-              final progress = _controller.value;
-              final Offset currentPos = p.velocity * progress * (15 * (1 - progress));
-              final double opacity = (1.0 - progress).clamp(0.0, 1.0);
-              return Transform.translate(
-                offset: currentPos,
-                child: Opacity(
-                  opacity: opacity,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(color: p.color, shape: BoxShape.circle),
-                  ),
-                ),
-              );
-            }).toList(),
-          );
-        },
+        ),
       ),
     );
   }
-}
-
-class _Particle {
-  final Color color;
-  final Offset velocity;
-  _Particle({required this.color, required this.velocity});
 }

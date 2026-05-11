@@ -1,58 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Footer extends StatelessWidget {
   const Footer({super.key});
 
-  static const double _verticalPadding = 40.0;
-  static const double _horizontalPadding = 24.0;
-  static const double _madeByTextSpacing = 10.0;
-  static const double _builtWithTextSpacing = 6.0;
-
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: _verticalPadding, horizontal: _horizontalPadding),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0A0A0A), Color(0xFF0D1117)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.3))),
       ),
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            "Made by Chinmay Bansal",
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _SocialIcon(icon: Icons.code_rounded, url: "https://github.com/ChinmayBansal010"),
+              const SizedBox(width: 20),
+              _SocialIcon(icon: Icons.work_outline_rounded, url: "https://linkedin.com/in/xenoryx"),
+              const SizedBox(width: 20),
+              _SocialIcon(icon: Icons.mail_outline_rounded, url: "mailto:chinmay8521@gmail.com"),
+            ],
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'DESIGNED & ENGINEERED BY CHINMAY BANSAL',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 12,
               fontFamily: 'SpaceGrotesk',
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF00FFF0),
-              shadows: [
-                Shadow(
-                  color: const Color(0x6600FFF0),
-                  blurRadius: 12,
-                  offset: Offset(0, 2),
-                ),
-              ],
+              fontWeight: FontWeight.w800,
+              color: AppColors.textSecondary,
+              letterSpacing: 2.0,
             ),
           ),
-          const SizedBox(height: _madeByTextSpacing),
+          const SizedBox(height: 16),
           const _GitHubButton(),
-          const SizedBox(height: _builtWithTextSpacing),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _FooterBadge(label: "FLUTTER 3.29"),
+              const SizedBox(width: 12),
+              _FooterBadge(label: "DART 3.7"),
+            ],
+          ),
+          const SizedBox(height: 20),
           Text(
-            "Built with Flutter & 💻 Open Source Spirit",
-            style: TextStyle(
-              fontSize: 13,
+            '© ${DateTime.now().year} — All rights reserved',
+            style: const TextStyle(
+              fontSize: 11,
               fontFamily: 'SpaceGrotesk',
-              color: Colors.white54,
+              color: AppColors.textMuted,
+              letterSpacing: 0.5,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SocialIcon extends StatefulWidget {
+  const _SocialIcon({required this.icon, required this.url});
+  final IconData icon;
+  final String url;
+
+  @override
+  State<_SocialIcon> createState() => _SocialIconState();
+}
+
+class _SocialIconState extends State<_SocialIcon> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: IconButton(
+        onPressed: () => launchUrl(Uri.parse(widget.url)),
+        icon: Icon(
+          widget.icon,
+          color: _isHovered ? AppColors.accent : AppColors.textSecondary,
+          size: 24,
+        ),
+      ),
+    );
+  }
+}
+
+class _FooterBadge extends StatelessWidget {
+  const _FooterBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textMuted,
+          fontFamily: 'monospace',
+        ),
       ),
     );
   }
@@ -65,106 +127,64 @@ class _GitHubButton extends StatefulWidget {
   State<_GitHubButton> createState() => _GitHubButtonState();
 }
 
-class _GitHubButtonState extends State<_GitHubButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scaleAnimation;
-  late final Animation<double> _blurAnimation;
-  late final Animation<double> _opacityAnimation;
-
-
-  static const double _githubIconTextSpacing = 6.0;
-  static const double _githubButtonPaddingH = 12.0;
-  static const double _githubButtonPaddingV = 8.0;
-  static const double _githubButtonRadius = 8.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _blurAnimation = Tween<double>(begin: 0.0, end: 12.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onHover(bool hovering) {
-    if (hovering) {
-      _controller.forward();
-    } else {
-      _controller.reverse();
-    }
-  }
+class _GitHubButtonState extends State<_GitHubButton> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => _onHover(true),
-      onExit: (_) => _onHover(false),
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () async {
-          final url = Uri.parse("https://github.com/ChinmayBansal010/Portfolio");
+          final url = Uri.parse(
+            'https://github.com/ChinmayBansal010/Portfolio',
+          );
           if (await canLaunchUrl(url)) {
-            await launchUrl(url);
+            await launchUrl(url, mode: LaunchMode.externalApplication);
           }
         },
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: _githubButtonPaddingH, vertical: _githubButtonPaddingV),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(_githubButtonRadius),
-                  color: Colors.white.withAlpha(2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00FFF0).withAlpha((_opacityAnimation.value * 40).toInt()),
-                      blurRadius: _blurAnimation.value,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.code,
-                      size: 18,
-                      color: Color.lerp(const Color(0xFF00FFF0), Colors.white, _controller.value * 0.2),
-                    ),
-                    const SizedBox(width: _githubIconTextSpacing),
-                    Text(
-                      "View this portfolio on GitHub",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'SpaceGrotesk',
-                        color: Color.lerp(Colors.white70, Colors.white, _controller.value * 0.5),
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ],
-                ),
+        child: Transform.translate(
+          offset: Offset(0, _isHovered ? -3 : 0),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: _isHovered
+                  ? AppColors.surface
+                  : AppColors.background.withValues(alpha: 0.32),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isHovered ? AppColors.accentSoft : AppColors.border,
               ),
-            );
-          },
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.code_rounded,
+                  size: 18,
+                  color: _isHovered
+                      ? AppColors.accent
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'View this portfolio on GitHub',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'SpaceGrotesk',
+                    fontWeight: FontWeight.w600,
+                    color: _isHovered
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
