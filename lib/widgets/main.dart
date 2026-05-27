@@ -29,14 +29,14 @@ class _MainSectionState extends State<MainSection>
     super.initState();
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1150),
     );
     _orbitController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 9),
     )..repeat();
 
-    Future.delayed(const Duration(milliseconds: 180), () {
+    Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) {
         _entranceController.forward();
       }
@@ -79,12 +79,12 @@ class _MainSectionState extends State<MainSection>
     return Container(
       padding: EdgeInsets.fromLTRB(
         isMobile ? 20 : 32,
-        isMobile ? 32 : 46,
+        isMobile ? 24 : 34,
         isMobile ? 20 : 32,
-        isMobile ? 42 : 54,
+        isMobile ? 28 : 34,
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1240),
+        constraints: const BoxConstraints(maxWidth: 1280),
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -92,21 +92,26 @@ class _MainSectionState extends State<MainSection>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(34),
             border: Border.all(color: AppColors.borderStrong),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
+                color: Colors.black.withValues(alpha: 0.24),
                 blurRadius: 30,
-                offset: const Offset(0, 20),
+                offset: const Offset(0, 22),
               ),
             ],
           ),
           child: Stack(
             children: [
               const Positioned(top: 0, right: 0, child: _HeroGlow()),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _HeroGridPainter()),
+                ),
+              ),
               Padding(
-                padding: EdgeInsets.all(isMobile ? 22 : 34),
+                padding: EdgeInsets.all(isMobile ? 22 : 30),
                 child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
               ),
             ],
@@ -118,7 +123,7 @@ class _MainSectionState extends State<MainSection>
 
   Widget _buildDesktopLayout() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           flex: 6,
@@ -129,56 +134,56 @@ class _MainSectionState extends State<MainSection>
                 intervalStart: 0.0,
                 slideOffset: const Offset(0, 0.25),
                 child: const _SectionBadge(
-                  label: 'ENGINEERING PORTFOLIO',
-                  icon: Icons.grid_view_rounded,
+                  label: 'AI ENGINEER',
+                  icon: Icons.psychology_alt_rounded,
                 ),
               ),
               const SizedBox(height: 18),
               _buildAnimatedChild(
                 intervalStart: 0.08,
-                slideOffset: const Offset(0, 0.25),
+                slideOffset: const Offset(0, 0.22),
                 child: _buildHeadline(),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               _buildAnimatedChild(
-                intervalStart: 0.18,
-                slideOffset: const Offset(0, 0.25),
+                intervalStart: 0.16,
+                slideOffset: const Offset(0, 0.2),
                 child: _buildSubText(),
+              ),
+              const SizedBox(height: 20),
+              _buildAnimatedChild(
+                intervalStart: 0.24,
+                slideOffset: const Offset(0, 0.18),
+                child: _buildDescription(),
               ),
               const SizedBox(height: 22),
               _buildAnimatedChild(
-                intervalStart: 0.28,
-                slideOffset: const Offset(0, 0.25),
-                child: _buildDescription(),
+                intervalStart: 0.32,
+                slideOffset: const Offset(0, 0.18),
+                child: const _HeroFocusRow(),
               ),
               const SizedBox(height: 24),
               _buildAnimatedChild(
-                intervalStart: 0.32,
-                slideOffset: const Offset(0, 0.2),
-                child: const _HeroSystemStats(),
+                intervalStart: 0.42,
+                slideOffset: const Offset(0, 0.15),
+                child: _buildMetrics(),
               ),
               const SizedBox(height: 28),
               _buildAnimatedChild(
-                intervalStart: 0.38,
-                slideOffset: const Offset(0, 0.2),
-                child: _buildDashboardMetrics(),
-              ),
-              const SizedBox(height: 32),
-              _buildAnimatedChild(
-                intervalStart: 0.48,
-                slideOffset: const Offset(0, 0.18),
+                intervalStart: 0.5,
+                slideOffset: const Offset(0, 0.14),
                 child: _buildButtons(),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 36),
+        const SizedBox(width: 30),
         Expanded(
           flex: 4,
           child: _buildAnimatedChild(
-            intervalStart: 0.1,
-            slideOffset: const Offset(0.08, 0),
-            child: _HeroOverviewPanel(orbitController: _orbitController),
+            intervalStart: 0.14,
+            slideOffset: const Offset(0.06, 0),
+            child: _HeroTechPanel(orbitController: _orbitController),
           ),
         ),
       ],
@@ -193,45 +198,51 @@ class _MainSectionState extends State<MainSection>
           intervalStart: 0.0,
           slideOffset: const Offset(0, 0.25),
           child: const _SectionBadge(
-            label: 'ENGINEERING PORTFOLIO',
-            icon: Icons.grid_view_rounded,
+            label: 'AI ENGINEER',
+            icon: Icons.psychology_alt_rounded,
           ),
+        ),
+        const SizedBox(height: 16),
+        _buildAnimatedChild(
+          intervalStart: 0.08,
+          slideOffset: const Offset(0, 0.22),
+          child: _buildHeadline(isMobile: true),
+        ),
+        const SizedBox(height: 14),
+        _buildAnimatedChild(
+          intervalStart: 0.16,
+          slideOffset: const Offset(0, 0.2),
+          child: _buildSubText(),
         ),
         const SizedBox(height: 18),
         _buildAnimatedChild(
-          intervalStart: 0.08,
-          slideOffset: const Offset(0, 0.25),
-          child: _buildHeadline(isMobile: true),
-        ),
-        const SizedBox(height: 16),
-        _buildAnimatedChild(
-          intervalStart: 0.18,
-          slideOffset: const Offset(0, 0.25),
-          child: _buildSubText(),
-        ),
-        const SizedBox(height: 16),
-        _buildAnimatedChild(
-          intervalStart: 0.28,
-          slideOffset: const Offset(0, 0.25),
+          intervalStart: 0.24,
+          slideOffset: const Offset(0, 0.18),
           child: _buildDescription(),
+        ),
+        const SizedBox(height: 20),
+        _buildAnimatedChild(
+          intervalStart: 0.32,
+          slideOffset: const Offset(0, 0.18),
+          child: const _HeroFocusRow(),
+        ),
+        const SizedBox(height: 22),
+        _buildAnimatedChild(
+          intervalStart: 0.42,
+          slideOffset: const Offset(0, 0.15),
+          child: _buildMetrics(),
         ),
         const SizedBox(height: 24),
         _buildAnimatedChild(
-          intervalStart: 0.36,
-          slideOffset: const Offset(0, 0.2),
-          child: _buildDashboardMetrics(),
+          intervalStart: 0.5,
+          slideOffset: const Offset(0, 0.14),
+          child: _buildButtons(),
         ),
-        const SizedBox(height: 26),
+        const SizedBox(height: 24),
         _buildAnimatedChild(
-          intervalStart: 0.44,
-          slideOffset: const Offset(0, 0.18),
-          child: _buildButtons(isCentered: false),
-        ),
-        const SizedBox(height: 28),
-        _buildAnimatedChild(
-          intervalStart: 0.14,
+          intervalStart: 0.18,
           slideOffset: const Offset(0, 0.12),
-          child: _HeroOverviewPanel(orbitController: _orbitController),
+          child: _HeroTechPanel(orbitController: _orbitController),
         ),
       ],
     );
@@ -239,12 +250,12 @@ class _MainSectionState extends State<MainSection>
 
   Widget _buildHeadline({bool isMobile = false}) {
     return Text(
-      'Building polished Flutter interfaces and practical machine learning products.',
+      'Building computer vision systems, deep learning workflows, and AI products that ship.',
       style: Theme.of(context).textTheme.displayLarge?.copyWith(
-        fontSize: isMobile ? 34 : 52,
+        fontSize: isMobile ? 34 : 54,
         fontWeight: FontWeight.w700,
-        height: 1.08,
-        letterSpacing: -1.2,
+        height: 1.02,
+        letterSpacing: -1.35,
       ),
     );
   }
@@ -255,52 +266,51 @@ class _MainSectionState extends State<MainSection>
 
   Widget _buildDescription() {
     return Text(
-      'I work across application UI, backend APIs, and real-time ML workflows, with an emphasis on clean execution, responsive user experience, and production-ready structure.',
+      'Focused on real-time perception, model training, inference APIs, research loops, and the product layer that makes ML usable.',
       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
         fontSize: 15.5,
-        height: 1.75,
+        height: 1.68,
         color: AppColors.textSecondary,
       ),
     );
   }
 
-  Widget _buildDashboardMetrics() {
+  Widget _buildMetrics() {
     final totalSkills = categorizedSkills.values.fold<int>(
       0,
       (total, items) => total + items.length,
     );
 
     return Wrap(
-      spacing: 14,
-      runSpacing: 14,
+      spacing: 12,
+      runSpacing: 12,
       children: [
         _MetricPill(
           value: '${projectItems.length}+',
-          label: 'featured builds',
-          icon: Icons.rocket_launch_outlined,
+          label: 'AI-led builds',
+          icon: Icons.auto_awesome_rounded,
         ),
         _MetricPill(
           value: '${categorizedSkills.length}',
-          label: 'skill domains',
-          icon: Icons.dashboard_outlined,
+          label: 'core domains',
+          icon: Icons.hub_rounded,
         ),
         _MetricPill(
           value: '$totalSkills',
-          label: 'tools and stacks',
-          icon: Icons.layers_outlined,
+          label: 'active skills',
+          icon: Icons.layers_rounded,
         ),
       ],
     );
   }
 
-  Widget _buildButtons({bool isCentered = false}) {
+  Widget _buildButtons() {
     return Wrap(
-      alignment: isCentered ? WrapAlignment.center : WrapAlignment.start,
-      spacing: 14,
-      runSpacing: 14,
+      spacing: 12,
+      runSpacing: 12,
       children: [
         _AnimatedCTAButton(
-          label: 'View Projects',
+          label: 'View Work',
           icon: Icons.arrow_outward_rounded,
           isPrimary: true,
           onPressed: () => NavigationHelper.scrollToSection(
@@ -310,8 +320,8 @@ class _MainSectionState extends State<MainSection>
           ),
         ),
         _AnimatedCTAButton(
-          label: 'Explore Skills',
-          icon: Icons.analytics_outlined,
+          label: 'AI Stack',
+          icon: Icons.psychology_alt_rounded,
           onPressed: () => NavigationHelper.scrollToSection(
             context: context,
             navIndex: 1,
@@ -319,62 +329,15 @@ class _MainSectionState extends State<MainSection>
           ),
         ),
         _AnimatedCTAButton(
-          label: 'Contact Me',
+          label: 'Contact',
           icon: Icons.mail_outline_rounded,
           onPressed: () => NavigationHelper.scrollToSection(
             context: context,
-            navIndex: 4,
+            navIndex: 3,
             navbarKeys: widget.navbarKeys,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ScanningLineEffect extends StatelessWidget {
-  const _ScanningLineEffect();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Stack(
-          children: [
-            Container().animate(onPlay: (c) => c.repeat()).custom(
-              duration: 3.seconds,
-              builder: (context, value, child) {
-                return Positioned(
-                  top: value * constraints.maxHeight,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 2,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          AppColors.accent.withValues(alpha: 0.5),
-                          AppColors.accent,
-                          AppColors.accent.withValues(alpha: 0.5),
-                          Colors.transparent,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 }
@@ -386,8 +349,8 @@ class _HeroGlow extends StatelessWidget {
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: Container(
-        height: 240,
-        width: 240,
+        height: 260,
+        width: 260,
         decoration: BoxDecoration(
           gradient: RadialGradient(
             colors: [
@@ -401,82 +364,23 @@ class _HeroGlow extends StatelessWidget {
   }
 }
 
-class _HeroSystemStats extends StatelessWidget {
-  const _HeroSystemStats();
-
+class _HeroGridPainter extends CustomPainter {
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.24),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StatIndicator(label: "UI ENGINE", value: "STABLE", color: AppColors.success),
-          _divider(),
-          _StatIndicator(label: "ML CORE", value: "ACTIVE", color: AppColors.accent),
-          _divider(),
-          _StatIndicator(label: "LATENCY", value: "14ms", color: AppColors.accentSoft),
-        ],
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.border.withValues(alpha: 0.12)
+      ..strokeWidth = 1;
+
+    for (double x = 24; x < size.width; x += 28) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 24; y < size.height; y += 28) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
   }
 
-  Widget _divider() => Container(
-        height: 16,
-        width: 1,
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        color: AppColors.border,
-      );
-}
-
-class _StatIndicator extends StatelessWidget {
-  const _StatIndicator({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textMuted,
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-            ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(duration: 800.ms),
-            const SizedBox(width: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _SectionBadge extends StatelessWidget {
@@ -490,7 +394,7 @@ class _SectionBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.28),
+        color: AppColors.background.withValues(alpha: 0.30),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.borderStrong),
       ),
@@ -503,12 +407,48 @@ class _SectionBadge extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
               color: AppColors.textSecondary,
-              letterSpacing: 1.1,
               fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroFocusRow extends StatelessWidget {
+  const _HeroFocusRow();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      'Computer Vision',
+      'Deep Learning',
+      'ROS / Robotics',
+      'Inference APIs',
+    ];
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: items.map((item) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.background.withValues(alpha: 0.30),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Text(
+            item,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -529,7 +469,7 @@ class _MetricPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.34),
+        color: AppColors.background.withValues(alpha: 0.32),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
@@ -570,145 +510,227 @@ class _MetricPill extends StatelessWidget {
   }
 }
 
-class _HeroOverviewPanel extends StatelessWidget {
-  const _HeroOverviewPanel({required this.orbitController});
+class _HeroTechPanel extends StatefulWidget {
+  const _HeroTechPanel({required this.orbitController});
 
   final AnimationController orbitController;
 
   @override
+  State<_HeroTechPanel> createState() => _HeroTechPanelState();
+}
+
+class _HeroTechPanelState extends State<_HeroTechPanel> {
+  bool _isHovered = false;
+  Offset _pointer = const Offset(180, 180);
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.borderStrong),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Capability Overview',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Active',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+    final tiltX = _isHovered ? ((_pointer.dy - 190) / 190) * 0.05 : 0.0;
+    final tiltY = _isHovered ? -((_pointer.dx - 180) / 180) * 0.05 : 0.0;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      onHover: (event) => setState(() => _pointer = event.localPosition),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateX(tiltX)
+          ..rotateY(tiltY),
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: AppColors.background.withValues(alpha: 0.44),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: _isHovered ? AppColors.accentSoft : AppColors.borderStrong,
           ),
-          const SizedBox(height: 16),
-          Container(
-            height: 220,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                colors: [AppColors.surfaceAlt, AppColors.backgroundElevated],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: (_isHovered ? AppColors.accentSoft : Colors.black)
+                  .withValues(alpha: _isHovered ? 0.16 : 0.18),
+              blurRadius: _isHovered ? 28 : 20,
+              offset: const Offset(0, 16),
             ),
-            child: AnimatedBuilder(
-              animation: orbitController,
-              builder: (context, child) {
-                final angle = orbitController.value * 2 * pi;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned(
-                      top: 26 + sin(angle) * 8,
-                      right: 34 + cos(angle) * 8,
-                      child: _StatusDot(color: AppColors.accentSoft),
-                    ),
-                    Positioned(
-                      bottom: 28 + cos(angle) * 8,
-                      left: 36 + sin(angle) * 8,
-                      child: _StatusDot(color: AppColors.accentSecondary),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: ShaderMask(
-                        shaderCallback: (bounds) {
-                          return AppColors.accentGradientStrong.createShader(
-                            bounds,
-                          );
-                        },
-                        blendMode: BlendMode.srcATop,
-                        child: Lottie.asset(
-                          'assets/animations/dev.json',
-                          fit: BoxFit.contain,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Live Focus',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                const _StatusChip(label: 'AI / ML'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 240,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: const LinearGradient(
+                  colors: [AppColors.surfaceAlt, AppColors.backgroundElevated],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: AnimatedBuilder(
+                animation: widget.orbitController,
+                builder: (context, child) {
+                  final angle = widget.orbitController.value * 2 * pi;
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        top: 24 + sin(angle) * 12,
+                        right: 34 + cos(angle) * 10,
+                        child: const _OrbitalNode(label: 'Vision'),
+                      ),
+                      Positioned(
+                        left: 24 + sin(angle + 1.3) * 10,
+                        bottom: 36 + cos(angle + 0.8) * 12,
+                        child: const _OrbitalNode(label: 'Models'),
+                      ),
+                      Positioned(
+                        right: 28 + sin(angle + 2.1) * 8,
+                        bottom: 42 + cos(angle + 2.1) * 10,
+                        child: const _OrbitalNode(label: 'Agents'),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => AppColors
+                              .accentGradientStrong
+                              .createShader(bounds),
+                          blendMode: BlendMode.srcATop,
+                          child: Lottie.asset(
+                            'assets/animations/dev.json',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                      const _SweepRing(),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          const _OverviewRow(
-            label: 'Focus',
-            value: 'Flutter interfaces, API-backed products, ML pipelines',
-          ),
-          const SizedBox(height: 12),
-          const _OverviewRow(
-            label: 'Strength',
-            value: 'Combining polished UX with real-time intelligence features',
-          ),
-          const SizedBox(height: 12),
-          const _OverviewRow(
-            label: 'Approach',
-            value: 'Structured, fast-loading, user-centered implementation',
-          ),
-        ],
+            const SizedBox(height: 18),
+            const _FocusRow(
+              label: 'Primary',
+              value: 'vision, inference, robotics',
+            ),
+            const SizedBox(height: 10),
+            const _FocusRow(
+              label: 'Delivery',
+              value: 'APIs, demos, real-time UX',
+            ),
+            const SizedBox(height: 10),
+            const _FocusRow(
+              label: 'Side lane',
+              value: 'Flutter / Android client work',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.color});
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label});
 
-  final Color color;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 12,
-      width: 12,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        boxShadow: [
-          BoxShadow(color: color.withValues(alpha: 0.45), blurRadius: 14),
-        ],
+        color: AppColors.success.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: AppColors.success,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
 }
 
-class _OverviewRow extends StatelessWidget {
-  const _OverviewRow({required this.label, required this.value});
+class _OrbitalNode extends StatelessWidget {
+  const _OrbitalNode({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.background.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.borderStrong),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        )
+        .animate(onPlay: (controller) => controller.repeat(reverse: true))
+        .scale(
+          begin: const Offset(0.96, 0.96),
+          end: const Offset(1.04, 1.04),
+          duration: 1400.ms,
+        );
+  }
+}
+
+class _SweepRing extends StatelessWidget {
+  const _SweepRing();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child:
+          Container(
+                width: 188,
+                height: 188,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.16),
+                    width: 1.2,
+                  ),
+                ),
+              )
+              .animate(onPlay: (controller) => controller.repeat())
+              .custom(
+                duration: 3.seconds,
+                builder: (context, value, child) {
+                  return Transform.rotate(angle: value * 2 * pi, child: child);
+                },
+              ),
+    );
+  }
+}
+
+class _FocusRow extends StatelessWidget {
+  const _FocusRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -719,12 +741,12 @@ class _OverviewRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 78,
+          width: 68,
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -733,7 +755,7 @@ class _OverviewRow extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
-              height: 1.55,
+              height: 1.45,
             ),
           ),
         ),
@@ -751,10 +773,10 @@ class _CyclingSubtext extends StatefulWidget {
 
 class _CyclingSubtextState extends State<_CyclingSubtext> {
   static const List<String> _titles = [
-    'Flutter Developer',
-    'Machine Learning Builder',
     'Computer Vision Engineer',
-    'Product-Focused Problem Solver',
+    'Deep Learning Builder',
+    'ROS / Robotics Developer',
+    'Inference API Developer',
   ];
 
   int _currentIndex = 0;
@@ -763,7 +785,7 @@ class _CyclingSubtextState extends State<_CyclingSubtext> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 2200), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 2100), (_) {
       if (mounted) {
         setState(() => _currentIndex = (_currentIndex + 1) % _titles.length);
       }
@@ -785,13 +807,13 @@ class _CyclingSubtextState extends State<_CyclingSubtext> {
     );
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 450),
+      duration: const Duration(milliseconds: 420),
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 0.18),
+              begin: const Offset(0, 0.14),
               end: Offset.zero,
             ).animate(animation),
             child: child,
@@ -867,7 +889,7 @@ class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
           animation: _hoverController,
           builder: (context, child) {
             return Transform.translate(
-              offset: Offset(0, -3 * _hoverController.value),
+              offset: Offset(0, -4 * _hoverController.value),
               child: child,
             );
           },
@@ -880,7 +902,7 @@ class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
                   ? null
                   : (_isHovered
                         ? AppColors.surface
-                        : AppColors.background.withValues(alpha: 0.2)),
+                        : AppColors.background.withValues(alpha: 0.20)),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isPrimary ? Colors.transparent : AppColors.borderStrong,
@@ -893,7 +915,7 @@ class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
                                     ? AppColors.accent
                                     : AppColors.accentSoft)
                                 .withValues(alpha: 0.18),
-                        blurRadius: 24,
+                        blurRadius: 22,
                         offset: const Offset(0, 12),
                       ),
                     ]

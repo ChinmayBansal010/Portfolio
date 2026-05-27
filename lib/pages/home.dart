@@ -1,9 +1,11 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:portfolio/constants/frosted_header.dart';
+import 'package:portfolio/constants/nav_items.dart';
 import 'package:portfolio/constants/navigation_helper.dart';
 import 'package:portfolio/constants/size.dart';
 import 'package:portfolio/widgets/contact.dart';
@@ -14,7 +16,6 @@ import 'package:portfolio/widgets/header_mobile.dart';
 import 'package:portfolio/widgets/main.dart';
 import 'package:portfolio/widgets/project.dart';
 import 'package:portfolio/widgets/skill.dart';
-import 'package:portfolio/constants/nav_items.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,12 +29,11 @@ class _HomePageState extends State<HomePage> {
   final scrollController = ScrollController();
   final List<GlobalKey> navbarKeys = List.generate(
     navTitles.length,
-    (index) => GlobalKey(),
+    (_) => GlobalKey(),
   );
 
   int _currentActiveNavIndex = 0;
   bool _isScrollingProgrammatically = false;
-
   double _scrollProgress = 0.0;
   bool _showBackToTop = false;
 
@@ -51,64 +51,67 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onScroll() {
-    if (mounted) {
-      setState(() {
-        _scrollProgress = (scrollController.offset /
-                scrollController.position.maxScrollExtent)
-            .clamp(0.0, 1.0);
-        _showBackToTop = scrollController.offset > 600;
-      });
+    if (!mounted) {
+      return;
     }
 
-    if (_isScrollingProgrammatically) return;
+    final maxScroll = scrollController.position.maxScrollExtent;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    setState(() {
+      _scrollProgress = maxScroll == 0
+          ? 0
+          : (scrollController.offset / maxScroll).clamp(0.0, 1.0);
+      _showBackToTop = scrollController.offset > 580;
+    });
 
-    const double scrollEndBuffer = 50.0;
-    const double activationLine = 100.0;
+    if (_isScrollingProgrammatically) {
+      return;
+    }
 
+    const activationLine = 130.0;
     int detectedActiveIndex = _currentActiveNavIndex;
 
-    if (scrollController.offset <= 20.0) {
+    if (scrollController.offset <= 24) {
       detectedActiveIndex = 0;
-    } else if (scrollController.offset >=
-        scrollController.position.maxScrollExtent - scrollEndBuffer) {
+    } else if (scrollController.offset >= maxScroll - 80) {
       detectedActiveIndex = navbarKeys.length - 1;
     } else {
+      double bestScore = double.infinity;
+
       for (int i = 0; i < navbarKeys.length; i++) {
-        if (i == 3) continue;
-
         final keyContext = navbarKeys[i].currentContext;
-        if (keyContext == null) continue;
+        if (keyContext == null) {
+          continue;
+        }
 
-        final RenderBox renderBox = keyContext.findRenderObject() as RenderBox;
+        final renderBox = keyContext.findRenderObject() as RenderBox;
         final position = renderBox.localToGlobal(Offset.zero);
+        final sectionTop = position.dy;
+        final sectionBottom = sectionTop + renderBox.size.height;
 
-        final double sectionTop = position.dy;
-        final double sectionBottom = sectionTop + renderBox.size.height;
-
-        if (sectionTop <= activationLine && sectionBottom > activationLine) {
+        if (i == navbarKeys.length - 1 && sectionTop <= viewportHeight * 0.55) {
           detectedActiveIndex = i;
           break;
+        }
+
+        if (sectionBottom <= activationLine - 24) {
+          continue;
+        }
+
+        final score = (sectionTop - activationLine).abs();
+        if (score < bestScore) {
+          bestScore = score;
+          detectedActiveIndex = i;
         }
       }
     }
 
     if (_currentActiveNavIndex != detectedActiveIndex) {
-      setState(() {
-        _currentActiveNavIndex = detectedActiveIndex;
-      });
+      setState(() => _currentActiveNavIndex = detectedActiveIndex);
     }
   }
 
   Future<void> _navigateToSection(int navIndex) async {
-    if (navIndex == 3) {
-      NavigationHelper.scrollToSection(
-        context: context,
-        navIndex: navIndex,
-        navbarKeys: navbarKeys,
-      );
-      return;
-    }
-
     setState(() {
       _isScrollingProgrammatically = true;
       _currentActiveNavIndex = navIndex;
@@ -120,13 +123,9 @@ class _HomePageState extends State<HomePage> {
       navbarKeys: navbarKeys,
     );
 
-    // Wait for the scroll animation to complete (duration is 500ms in NavigationHelper)
-    await Future.delayed(const Duration(milliseconds: 600));
-
+    await Future.delayed(const Duration(milliseconds: 650));
     if (mounted) {
-      setState(() {
-        _isScrollingProgrammatically = false;
-      });
+      setState(() => _isScrollingProgrammatically = false);
     }
   }
 
@@ -152,43 +151,25 @@ class _HomePageState extends State<HomePage> {
                 child: InteractiveConstellationBackground(),
               ),
               Positioned.fill(
-                top: 0,
                 child: SingleChildScrollView(
                   controller: scrollController,
                   child: Column(
                     children: [
-                      SizedBox(height: 90, key: navbarKeys[0]),
+                      SizedBox(
+                        height: isDesktop ? 104 : 92,
+                        key: navbarKeys[0],
+                      ),
                       MainSection(navbarKeys: navbarKeys)
                           .animate()
-                          .fadeIn(duration: 800.ms, curve: Curves.easeOutCubic)
-                          .slideY(begin: 0.1, end: 0, duration: 800.ms),
+                          .fadeIn(duration: 720.ms, curve: Curves.easeOutCubic)
+                          .slideY(begin: 0.08, end: 0),
                       const LottieSectionSeparator(),
-                      SkillSection(navbarKey: navbarKeys[1])
-                          .animate()
-                          .fadeIn(
-                            duration: 1000.ms,
-                            curve: Curves.easeOutCubic,
-                            delay: 200.ms,
-                          )
-                          .slideY(begin: 0.05, end: 0),
+                      SkillSection(navbarKey: navbarKeys[1]),
                       const LottieSectionSeparator(),
-                      ProjectSection(navbarKey: navbarKeys[2])
-                          .animate()
-                          .fadeIn(
-                            duration: 1000.ms,
-                            curve: Curves.easeOutCubic,
-                            delay: 300.ms,
-                          )
-                          .slideY(begin: 0.05, end: 0),
+                      ProjectSection(navbarKey: navbarKeys[2]),
                       const LottieSectionSeparator(),
-                      GetInTouchSection(navbarKey: navbarKeys[4])
-                          .animate()
-                          .fadeIn(
-                            duration: 1000.ms,
-                            curve: Curves.easeOutCubic,
-                            delay: 400.ms,
-                          )
-                          .slideY(begin: 0.05, end: 0),
+                      GetInTouchSection(navbarKey: navbarKeys[3]),
+                      const SizedBox(height: 16),
                       const Footer(),
                     ],
                   ),
@@ -200,10 +181,10 @@ class _HomePageState extends State<HomePage> {
                 right: 0,
                 child: FrostedHeaderWrapper(
                   backgroundColor: AppColors.background,
-                  backgroundAlpha: 100,
-                  blurSigma: 14,
+                  backgroundAlpha: 104,
+                  blurSigma: 16,
                   enableBorder: true,
-                  height: 90,
+                  height: isDesktop ? 94 : 84,
                   child: Stack(
                     children: [
                       isDesktop
@@ -213,24 +194,23 @@ class _HomePageState extends State<HomePage> {
                             )
                           : HeaderMobile(
                               onLogoTap: () => _navigateToSection(0),
-                              onMenuTap: () {
-                                scaffoldKey.currentState?.openEndDrawer();
-                              },
+                              onMenuTap: () =>
+                                  scaffoldKey.currentState?.openEndDrawer(),
                             ),
-                      // Scroll Progress Line
                       Positioned(
                         bottom: 0,
                         left: 0,
                         child: Container(
-                          height: 2,
-                          width: MediaQuery.of(context).size.width * _scrollProgress,
+                          height: 2.5,
+                          width:
+                              MediaQuery.of(context).size.width *
+                              _scrollProgress,
                           decoration: BoxDecoration(
-                            gradient: AppColors.accentGradient,
+                            gradient: AppColors.accentGradientStrong,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.5),
-                                blurRadius: 4,
-                                spreadRadius: 1,
+                                color: AppColors.accent.withValues(alpha: 0.45),
+                                blurRadius: 8,
                               ),
                             ],
                           ),
@@ -240,18 +220,20 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              // Back to Top Button
               Positioned(
-                bottom: 30,
-                right: 30,
+                right: 18,
+                bottom: 18,
                 child: AnimatedScale(
-                  scale: _showBackToTop ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
+                  scale: _showBackToTop ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
                   child: FloatingActionButton(
                     onPressed: () => _navigateToSection(0),
                     backgroundColor: AppColors.accent,
                     elevation: 10,
-                    child: const Icon(Icons.arrow_upward, color: AppColors.background),
+                    child: const Icon(
+                      Icons.north_rounded,
+                      color: AppColors.background,
+                    ),
                   ),
                 ),
               ),
@@ -264,100 +246,69 @@ class _HomePageState extends State<HomePage> {
 }
 
 class LottieSectionSeparator extends StatelessWidget {
-  final EdgeInsetsGeometry padding;
-  final Alignment alignment;
-  final bool repeat;
+  const LottieSectionSeparator({super.key, this.repeat = true});
 
-  const LottieSectionSeparator({
-    super.key,
-    this.padding = const EdgeInsets.symmetric(vertical: 64.0),
-    this.alignment = Alignment.center,
-    this.repeat = true,
-  });
+  final bool repeat;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final lineWidth = screenWidth < 720
+        ? screenWidth * 0.86
+        : min(screenWidth * 0.9, 1180.0);
+    final lottieWidth = screenWidth < 720 ? screenWidth * 0.62 : 760.0;
 
     return Padding(
-      padding: padding,
+      padding: EdgeInsets.symmetric(vertical: screenWidth < 720 ? 18 : 22),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 1. Core Energy Pulse
           Container(
-            height: 120,
-            width: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.accent.withValues(alpha: 0.15),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ).animate(onPlay: (c) => c.repeat()).scale(
-            begin: const Offset(0.8, 0.8),
-            end: const Offset(1.5, 1.5),
-            duration: 2.seconds,
-            curve: Curves.easeOut,
-          ).fadeOut(duration: 2.seconds),
-
-          // 2. Technical Beam
-          Container(
-            height: 1,
-            width: (screenWidth * 0.6).clamp(240.0, 900.0),
+            width: lineWidth,
+            height: 1.5,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  AppColors.accent.withValues(alpha: 0.4),
-                  AppColors.accent,
-                  AppColors.accent.withValues(alpha: 0.4),
+                  AppColors.borderStrong.withValues(alpha: 0.55),
+                  AppColors.accentSoft,
+                  AppColors.borderStrong.withValues(alpha: 0.55),
                   Colors.transparent,
                 ],
-                stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
               ),
             ),
-          ).animate(onPlay: (c) => c.repeat()).shimmer(
-            duration: 3.seconds,
-            color: Colors.white.withValues(alpha: 0.3),
           ),
-
-          // 3. Floating Particles (Lottie)
           Opacity(
-            opacity: 0.6,
+            opacity: 0.58,
             child: Lottie.asset(
               'assets/animations/section_separator.json',
-              width: isMobile ? 280 : 500,
-              height: 120,
-              fit: BoxFit.contain,
+              width: lottieWidth,
+              height: 88,
               repeat: repeat,
+              fit: BoxFit.contain,
             ),
           ),
-
-          // 4. Central Hub
           Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accent,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.8),
-                  blurRadius: 15,
-                  spreadRadius: 2,
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accent,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.6),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-            begin: const Offset(0.8, 0.8),
-            end: const Offset(1.2, 1.2),
-            duration: 1.seconds,
-          ),
+              )
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .scale(
+                begin: const Offset(0.85, 0.85),
+                end: const Offset(1.18, 1.18),
+                duration: 1100.ms,
+              ),
         ],
       ),
     );
@@ -428,13 +379,16 @@ class _InteractiveConstellationBackgroundState
 
   int _calculateDotCount(double width, int layerIndex) {
     const baseCount = 30.0;
-    final double scale = (width / 400.0).clamp(1.0, 4.0);
+    final scale = (width / 400.0).clamp(1.0, 4.0);
     final count = (baseCount * sqrt(scale)).round();
     return (count / (layerIndex + 1)).round() + (layerIndex * 15);
   }
 
   void _updatePointer(PointerEvent event, Size size) {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _pointerPosition = Offset(
         (event.localPosition.dx / size.width).clamp(0.0, 1.0),
@@ -476,7 +430,6 @@ class _InteractiveConstellationBackgroundState
                     ),
                   ),
                 ),
-                // Nebula/Gas layer for 3D tint
                 Positioned.fill(
                   child: CustomPaint(
                     painter: _NebulaPainter(pointerPosition: _pointerPosition),
@@ -491,14 +444,7 @@ class _InteractiveConstellationBackgroundState
   }
 }
 
-// Data models for layers and dots
 class _Dot {
-  double x;
-  double y;
-  double vx;
-  double vy;
-  double radius;
-
   _Dot({
     required this.x,
     required this.y,
@@ -506,6 +452,12 @@ class _Dot {
     required this.vy,
     required this.radius,
   });
+
+  double x;
+  double y;
+  double vx;
+  double vy;
+  double radius;
 
   void updatePosition() {
     x += vx;
@@ -518,9 +470,6 @@ class _Dot {
 }
 
 class _StarLayer {
-  final int layerIndex;
-  final List<_Dot> dots;
-
   _StarLayer({
     required this.layerIndex,
     required int dotCount,
@@ -536,8 +485,11 @@ class _StarLayer {
          ),
        );
 
+  final int layerIndex;
+  final List<_Dot> dots;
+
   void updatePositions() {
-    for (var dot in dots) {
+    for (final dot in dots) {
       dot.updatePosition();
     }
   }
@@ -548,16 +500,7 @@ double _calculateConnectionDistance(double width, int layerIndex) {
   return baseDist / (layerIndex + 1);
 }
 
-// Custom Painters
 class _ConstellationPainter extends CustomPainter {
-  final List<_Dot> dots;
-  final double maxConnectionDistance;
-  final Offset pointerPosition;
-  final int layerIndex;
-
-  final Paint _dotPaint = Paint()..style = PaintingStyle.fill;
-  final Paint _linePaint = Paint();
-
   _ConstellationPainter({
     required this.dots,
     required this.maxConnectionDistance,
@@ -565,15 +508,22 @@ class _ConstellationPainter extends CustomPainter {
     required this.layerIndex,
   });
 
+  final List<_Dot> dots;
+  final double maxConnectionDistance;
+  final Offset pointerPosition;
+  final int layerIndex;
+  final Paint _dotPaint = Paint()..style = PaintingStyle.fill;
+  final Paint _linePaint = Paint();
+
   @override
   void paint(Canvas canvas, Size size) {
-    final double parallaxFactor = 0.05 * (layerIndex + 1);
+    final parallaxFactor = 0.05 * (layerIndex + 1);
     final pointerParallax = Offset(
       (pointerPosition.dx - 0.5) * parallaxFactor,
       (pointerPosition.dy - 0.5) * parallaxFactor,
     );
 
-    for (var dot in dots) {
+    for (final dot in dots) {
       final pos = Offset(
         (dot.x + pointerParallax.dx) * size.width,
         (dot.y + pointerParallax.dy) * size.height,
@@ -588,7 +538,7 @@ class _ConstellationPainter extends CustomPainter {
       );
     }
 
-    final double maxDistSq = pow(maxConnectionDistance, 2).toDouble();
+    final maxDistSq = pow(maxConnectionDistance, 2).toDouble();
 
     for (var i = 0; i < dots.length; i++) {
       final p1 = Offset(
@@ -600,10 +550,10 @@ class _ConstellationPainter extends CustomPainter {
           (dots[j].x + pointerParallax.dx) * size.width,
           (dots[j].y + pointerParallax.dy) * size.height,
         );
-        final num distSq = pow(p2.dx - p1.dx, 2) + pow(p2.dy - p1.dy, 2);
+        final distSq = pow(p2.dx - p1.dx, 2) + pow(p2.dy - p1.dy, 2);
 
         if (distSq <= maxDistSq) {
-          final double opacity = 1.0 - (sqrt(distSq) / maxConnectionDistance);
+          final opacity = 1.0 - (sqrt(distSq) / maxConnectionDistance);
           _linePaint.color = AppColors.borderStrong.withValues(
             alpha: opacity * 0.42,
           );
@@ -613,21 +563,19 @@ class _ConstellationPainter extends CustomPainter {
       }
     }
 
-    // Connect dots to the pointer for an interactive effect
     final pointerPx = Offset(
       pointerPosition.dx * size.width,
       pointerPosition.dy * size.height,
     );
-    for (var dot in dots) {
+    for (final dot in dots) {
       final p = Offset(
         (dot.x + pointerParallax.dx) * size.width,
         (dot.y + pointerParallax.dy) * size.height,
       );
-      final num distSq =
-          pow(p.dx - pointerPx.dx, 2) + pow(p.dy - pointerPx.dy, 2);
+      final distSq = pow(p.dx - pointerPx.dx, 2) + pow(p.dy - pointerPx.dy, 2);
 
       if (distSq <= maxDistSq) {
-        final double opacity = 1.0 - (sqrt(distSq) / maxConnectionDistance);
+        final opacity = 1.0 - (sqrt(distSq) / maxConnectionDistance);
         _linePaint.color = AppColors.accentSoft.withValues(
           alpha: opacity * 0.55,
         );
@@ -638,15 +586,13 @@ class _ConstellationPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ConstellationPainter oldDelegate) {
-    return true;
-  }
+  bool shouldRepaint(covariant _ConstellationPainter oldDelegate) => true;
 }
 
 class _NebulaPainter extends CustomPainter {
-  final Offset pointerPosition;
+  const _NebulaPainter({required this.pointerPosition});
 
-  _NebulaPainter({required this.pointerPosition});
+  final Offset pointerPosition;
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -60,7 +60,7 @@ class _SiteLogoState extends State<SiteLogo>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chinmay.dev',
+                'Chinmay Bansal',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,

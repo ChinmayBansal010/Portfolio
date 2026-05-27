@@ -1,90 +1,82 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:portfolio/widgets/site_logo.dart';
 
-class HeaderMobile extends StatefulWidget {
+class HeaderMobile extends StatelessWidget {
   const HeaderMobile({super.key, this.onLogoTap, this.onMenuTap});
 
   final VoidCallback? onLogoTap;
   final VoidCallback? onMenuTap;
 
   @override
-  State<HeaderMobile> createState() => _HeaderMobileState();
-}
-
-class _HeaderMobileState extends State<HeaderMobile>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _floatController;
-
-  @override
-  void initState() {
-    super.initState();
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _floatController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _floatController,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, 3 * sin(_floatController.value * 2 * pi)),
-          child: child,
-        );
-      },
-      child: Container(
-        height: 60,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceGlass,
-          borderRadius: BorderRadius.circular(20),
-          border:
-              Border.all(color: AppColors.borderStrong.withValues(alpha: 0.6)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.accent.withValues(alpha: 0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
+    return Container(
+      height: 62,
+      margin: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceGlass,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderStrong),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          SiteLogo(onTap: onLogoTap),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.background.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            SiteLogo(onTap: widget.onLogoTap),
-            const Spacer(),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onMenuTap,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: const Icon(
-                    Icons.menu_rounded,
-                    color: AppColors.accent,
-                    size: 28,
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.psychology_alt_rounded,
+                  color: AppColors.accent,
+                  size: 16,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  'AI',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontFamily: 'SpaceGrotesk',
                   ),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          InkWell(
+            onTap: onMenuTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.background.withValues(alpha: 0.28),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Icon(
+                Icons.menu_rounded,
+                color: AppColors.textPrimary,
+                size: 22,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

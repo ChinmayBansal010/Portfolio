@@ -1,80 +1,131 @@
 import 'package:flutter/material.dart';
 
-const String skillSectionTitle = 'The tools I use to design, build, and ship products.';
+const String skillSectionTitle =
+    'Artificial intelligence, computer vision, backend systems, robotics, and intelligent product engineering.';
+
 const String skillSectionDescription =
-    'The stack is organized by delivery function so recruiters, collaborators, and clients can quickly understand where I contribute across UI, backend, and ML implementation.';
+    'Focused on building scalable AI systems, multimodal applications, real-time inference pipelines, robotics workflows, and production-ready software products.';
 
 const Map<String, ({IconData icon, String summary})> skillCategoryMeta = {
   'Programming Languages': (
     icon: Icons.code_rounded,
     summary:
-        'Core languages used for application logic, data handling, and systems work.',
+        'Programming languages used across AI systems, backend engineering, robotics, and frontend development.',
   ),
-  'App Development': (
-    icon: Icons.phone_android_rounded,
-    summary:
-        'Cross-platform interface work focused on fluid, maintainable user experiences.',
-  ),
-  'Backend Development': (
-    icon: Icons.dns_rounded,
-    summary:
-        'Lightweight service layers, API design, and integration-friendly backend tooling.',
-  ),
-  'AI / ML Frameworks': (
+
+  'Artificial Intelligence': (
     icon: Icons.psychology_alt_rounded,
     summary:
-        'Libraries used for training, inference, real-time detection, and experimentation.',
+        'Machine learning, deep learning, LLM orchestration, local AI deployment, and intelligent systems.',
   ),
-  'Databases & Platforms': (
+
+  'Computer Vision': (
+    icon: Icons.visibility_rounded,
+    summary:
+        'Real-time vision systems, visual AI pipelines, inference optimization, and accelerated deployment.',
+  ),
+
+  'Frontend Engineering': (
+    icon: Icons.web_rounded,
+    summary:
+        'Modern frontend development, responsive interfaces, component architectures, and cross-platform UI systems.',
+  ),
+
+  'Backend & Databases': (
     icon: Icons.storage_rounded,
     summary:
-        'Persistence, managed services, and supporting cloud tools for product delivery.',
+        'Backend architectures, APIs, cloud-integrated systems, relational databases, and scalable services.',
   ),
-  'Deployment & Hosting': (
-    icon: Icons.rocket_launch_rounded,
+
+  'Robotics & Autonomous Systems': (
+    icon: Icons.memory_rounded,
     summary:
-        'Platforms used to ship builds, backend services, and working demos quickly.',
+        'Robotics middleware, autonomous systems, and hardware-integrated software engineering.',
   ),
-  'Design & Prototyping': (
-    icon: Icons.design_services_rounded,
+
+  'Developer Tools & DevOps': (
+    icon: Icons.precision_manufacturing_rounded,
     summary:
-        'Interface planning and iteration tools that support product polish and handoff.',
+        'Version control, CI/CD pipelines, developer workflows, tooling, and engineering operations.',
   ),
 };
 
 const Map<String, List<Map<String, String>>> categorizedSkills = {
-  "Programming Languages": [
-    {"img": "assets/skillIcons/python.svg", "title": "Python"},
-    {"img": "assets/skillIcons/c.svg", "title": "C"},
-    {"img": "assets/skillIcons/cpp.svg", "title": "C++"},
-    {"img": "assets/skillIcons/dart.svg", "title": "Dart"},
-    {"img": "assets/skillIcons/sql.svg", "title": "SQL"},
+  'Programming Languages': [
+    {'img': 'assets/skillIcons/python.svg', 'title': 'Python'},
+    {'img': 'assets/skillIcons/c.svg', 'title': 'C'},
+    {'img': 'assets/skillIcons/cpp.svg', 'title': 'C++'},
+    {'img': 'assets/skillIcons/dart.svg', 'title': 'Dart'},
+    {'img': 'assets/skillIcons/typescript.svg', 'title': 'TypeScript'},
+    {'img': 'assets/skillIcons/javascript.svg', 'title': 'JavaScript'},
+    {'img': 'assets/skillIcons/sql.svg', 'title': 'SQL'},
+    {'img': 'assets/skillIcons/bash.svg', 'title': 'Bash'},
   ],
-  "App Development": [
-    {"img": "assets/skillIcons/flutter.svg", "title": "Flutter"},
+
+  'Artificial Intelligence': [
+    {'img': 'assets/skillIcons/pytorch.svg', 'title': 'PyTorch'},
+    {'img': 'assets/skillIcons/tensorflow.svg', 'title': 'TensorFlow'},
+    {'img': 'assets/skillIcons/keras.svg', 'title': 'Keras'},
+    {'img': 'assets/skillIcons/scikitlearn.svg', 'title': 'Scikit-learn'},
+    {'img': 'assets/skillIcons/huggingface.svg', 'title': 'Hugging Face'},
+    {'img': 'assets/skillIcons/ollama.svg', 'title': 'Ollama'},
+    {'img': 'assets/skillIcons/langchain.svg', 'title': 'LangChain'},
+    {'img': 'assets/skillIcons/langgraph.svg', 'title': 'LangGraph'},
   ],
-  "Backend Development": [
-    {"img": "assets/skillIcons/flask.svg", "title": "Flask"},
-    {"img": "assets/skillIcons/fastapi.svg", "title": "FastAPI"},
+
+  'Computer Vision': [
+    {'img': 'assets/skillIcons/opencv.svg', 'title': 'OpenCV'},
+    {'img': 'assets/skillIcons/mediapipe.svg', 'title': 'MediaPipe'},
+    {'img': 'assets/skillIcons/yolo.svg', 'title': 'Ultralytics YOLO'},
+    {'img': 'assets/skillIcons/onnx.svg', 'title': 'ONNX Runtime'},
+    {'img': 'assets/skillIcons/tensorrt.svg', 'title': 'TensorRT'},
+    {'img': 'assets/skillIcons/cuda.svg', 'title': 'CUDA'},
+    {'img': 'assets/skillIcons/ffmpeg.svg', 'title': 'FFmpeg'},
+    {'img': 'assets/skillIcons/deepstream.svg', 'title': 'NVIDIA DeepStream'},
+    {'img': 'assets/skillIcons/dlib.svg', 'title': 'Dlib'},
   ],
-  "AI / ML Frameworks": [
-    {"img": "assets/skillIcons/pytorch.svg", "title": "PyTorch"},
-    {"img": "assets/skillIcons/tensorflow.svg", "title": "TensorFlow"},
-    {"img": "assets/skillIcons/keras.svg", "title": "Keras"},
-    {"img": "assets/skillIcons/mediapipe.svg", "title": "Mediapipe"},
+
+  'Frontend Engineering': [
+    {'img': 'assets/skillIcons/flutter.svg', 'title': 'Flutter'},
+    {'img': 'assets/skillIcons/react.svg', 'title': 'React'},
+    {'img': 'assets/skillIcons/reactnative.svg', 'title': 'React Native'},
+    {'img': 'assets/skillIcons/kotlin.svg', 'title': 'Kotlin'},
+    {'img': 'assets/skillIcons/tailwind.svg', 'title': 'Tailwind CSS'},
+    {'img': 'assets/skillIcons/html.svg', 'title': 'HTML'},
+    {'img': 'assets/skillIcons/css.svg', 'title': 'CSS'},
   ],
-  "Databases & Platforms": [
-    {"img": "assets/skillIcons/my-sql.svg", "title": "MySQL"},
-    {"img": "assets/skillIcons/postgresql.svg", "title": "PostgreSQL"},
-    {"img": "assets/skillIcons/firebase.svg", "title": "Firebase"},
-    {"img": "assets/skillIcons/supabase.svg", "title": "Supabase"},
-    {"img": "assets/skillIcons/cloudinary.svg", "title": "Cloudinary"},
+
+  'Backend & Databases': [
+    {'img': 'assets/skillIcons/fastapi.svg', 'title': 'FastAPI'},
+    {'img': 'assets/skillIcons/flask.svg', 'title': 'Flask'},
+    {'img': 'assets/skillIcons/docker.svg', 'title': 'Docker'},
+    {'img': 'assets/skillIcons/nginx.svg', 'title': 'Nginx'},
+    {'img': 'assets/skillIcons/firebase.svg', 'title': 'Firebase'},
+    {'img': 'assets/skillIcons/supabase.svg', 'title': 'Supabase'},
+    {'img': 'assets/skillIcons/azure.svg', 'title': 'Microsoft Azure'},
+    {'img': 'assets/skillIcons/postgresql.svg', 'title': 'PostgreSQL'},
+    {'img': 'assets/skillIcons/mysql.svg', 'title': 'MySQL'},
+    {'img': 'assets/skillIcons/sqlalchemy.svg', 'title': 'SQLAlchemy'},
+    {'img': 'assets/skillIcons/websocket.svg', 'title': 'WebSockets'},
+    {'img': 'assets/skillIcons/postman.svg', 'title': 'Postman'},
+    {'icon': 'dns', 'title': 'REST APIs'},
   ],
-  "Deployment & Hosting": [
-    {"img": "assets/skillIcons/netlify.svg", "title": "Netlify"},
-    {"img": "assets/skillIcons/render.svg", "title": "Render"},
+
+  'Robotics & Autonomous Systems': [
+    {'img': 'assets/skillIcons/ros.svg', 'title': 'ROS'},
+    {'img': 'assets/skillIcons/gazebo.svg', 'title': 'Gazebo'},
+    {'img': 'assets/skillIcons/raspberrypi.svg', 'title': 'Raspberry Pi'},
+    {'img': 'assets/skillIcons/arduino.svg', 'title': 'Arduino'},
+    {'img': 'assets/skillIcons/rviz.svg', 'title': 'RViz'},
+    {'img': 'assets/skillIcons/autocad.svg', 'title': 'AutoCAD'},
   ],
-  "Design & Prototyping": [
-    {"img": "assets/skillIcons/figma.svg", "title": "Figma"},
+
+  'Developer Tools & DevOps': [
+    {'img': 'assets/skillIcons/git.svg', 'title': 'Git'},
+    {'img': 'assets/skillIcons/github.svg', 'title': 'GitHub'},
+    {'img': 'assets/skillIcons/githubactions.svg', 'title': 'GitHub Actions'},
+    {'img': 'assets/skillIcons/figma.svg', 'title': 'Figma'},
+    {'img': 'assets/skillIcons/linux.svg', 'title': 'Linux'},
+    {'icon': 'sync', 'title': 'CI/CD'},
   ],
 };

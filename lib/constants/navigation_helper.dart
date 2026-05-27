@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class NavigationHelper {
   static Future<void> scrollToSection({
@@ -7,27 +6,20 @@ class NavigationHelper {
     required int navIndex,
     required List<GlobalKey> navbarKeys,
   }) async {
-    if (navIndex == 3) {
-      final url = Uri.parse("https://chinmaybansal.hashnode.dev");
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url);
-        return;
-      }
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    if (!context.mounted || navIndex >= navbarKeys.length) {
+      return;
     }
 
-    await Future.delayed(Duration(milliseconds: 50));
-
-    if (!context.mounted) return;
-
-    if (navIndex < navbarKeys.length) {
-      final key = navbarKeys[navIndex];
-      if (key.currentContext != null) {
-        Scrollable.ensureVisible(
-          key.currentContext!,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
+    final key = navbarKeys[navIndex];
+    if (key.currentContext != null) {
+      await Scrollable.ensureVisible(
+        key.currentContext!,
+        duration: const Duration(milliseconds: 550),
+        curve: Curves.easeInOutCubic,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+      );
     }
   }
 }

@@ -12,149 +12,115 @@ class DrawerMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Drawer(
       backgroundColor: Colors.transparent,
-      width: MediaQuery.of(context).size.width * 0.85,
+      width: MediaQuery.of(context).size.width * 0.84,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.background.withValues(alpha: 0.95),
+          color: AppColors.background.withValues(alpha: 0.96),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            bottomLeft: Radius.circular(24),
+          ),
           border: Border(
-            left: BorderSide(
-              color: AppColors.accent.withValues(alpha: 0.2),
-              width: 1,
-            ),
+            left: BorderSide(color: AppColors.accent.withValues(alpha: 0.18)),
           ),
         ),
-        child: Stack(
-          children: [
-            // Decorative background elements
-            Positioned(
-              top: -100,
-              right: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.accent.withValues(alpha: 0.05),
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.2, 1.2),
-                    duration: 4.seconds,
-                  ),
-            ),
-            SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Drawer Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                    child: Row(
-                      children: [
-                        const SiteLogo(),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              color: AppColors.textPrimary, size: 28),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 22, 16, 16),
+                child: Row(
+                  children: [
+                    const SiteLogo(),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                  ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24),
-                    child: Divider(color: AppColors.border, thickness: 1),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.08, end: 0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Text(
+                  'AI-first portfolio',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Navigation Items
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: navTitles.length,
-                      itemBuilder: (context, i) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _AnimatedNavItem(
+                ),
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  itemCount: navTitles.length,
+                  itemBuilder: (context, i) {
+                    return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _DrawerNavItem(
                             icon: navIcons[i],
                             label: navTitles[i],
-                            index: i,
                             onTap: () {
                               Navigator.of(context).pop();
                               onNavItemTap(i);
                             },
                           ),
-                        ).animate().fadeIn(
-                              duration: 400.ms,
-                              delay: (100 * i).ms,
-                            ).slideX(begin: 0.1, end: 0);
-                      },
+                        )
+                        .animate()
+                        .fadeIn(duration: 320.ms, delay: (70 * i).ms)
+                        .slideX(begin: 0.08, end: 0);
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.55),
+                  border: Border(
+                    top: BorderSide(
+                      color: AppColors.border.withValues(alpha: 0.5),
                     ),
                   ),
-
-                  // Social Section & Footer
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.5),
-                      border: Border(
-                        top: BorderSide(
-                          color: AppColors.border.withValues(alpha: 0.5),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: const [
+                        _SocialIconButton(
+                          icon: Icons.code_rounded,
+                          url: 'https://github.com/ChinmayBansal010',
                         ),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _SocialIconButton(
-                              icon: Icons.code_rounded,
-                              url: "https://github.com/ChinmayBansal010",
-                            ),
-                            _SocialIconButton(
-                              icon: Icons.work_outline_rounded,
-                              url: "https://linkedin.com/in/xenoryx",
-                            ),
-                            _SocialIconButton(
-                              icon: Icons.mail_outline_rounded,
-                              url: "mailto:chinmay8521@gmail.com",
-                            ),
-                          ],
-                        ).animate().fadeIn(delay: 600.ms),
-                        const SizedBox(height: 24),
-                        Text(
-                          '© ${DateTime.now().year} CHINMAY BANSAL',
-                          textAlign: TextAlign.center,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: AppColors.textMuted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2.0,
-                          ),
+                        _SocialIconButton(
+                          icon: Icons.work_outline_rounded,
+                          url: 'https://linkedin.com/in/xenoryx',
                         ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 2,
-                          width: 30,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.accentGradient,
-                            borderRadius: BorderRadius.circular(1),
-                          ),
+                        _SocialIconButton(
+                          icon: Icons.mail_outline_rounded,
+                          url: 'mailto:chinmay8521@gmail.com',
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    Text(
+                      '© ${DateTime.now().year} Chinmay Bansal',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -163,6 +129,7 @@ class DrawerMobile extends StatelessWidget {
 
 class _SocialIconButton extends StatelessWidget {
   const _SocialIconButton({required this.icon, required this.url});
+
   final IconData icon;
   final String url;
 
@@ -170,12 +137,12 @@ class _SocialIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => launchUrl(Uri.parse(url)),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.background.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.background.withValues(alpha: 0.52),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.border),
         ),
         child: Icon(icon, color: AppColors.accent, size: 20),
@@ -184,83 +151,66 @@ class _SocialIconButton extends StatelessWidget {
   }
 }
 
-class _AnimatedNavItem extends StatefulWidget {
-  const _AnimatedNavItem({
+class _DrawerNavItem extends StatefulWidget {
+  const _DrawerNavItem({
     required this.icon,
     required this.label,
     required this.onTap,
-    required this.index,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final int index;
 
   @override
-  State<_AnimatedNavItem> createState() => _AnimatedNavItemState();
+  State<_DrawerNavItem> createState() => _DrawerNavItemState();
 }
 
-class _AnimatedNavItemState extends State<_AnimatedNavItem> {
-  bool _isPressed = false;
+class _DrawerNavItemState extends State<_DrawerNavItem> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
       onTap: widget.onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _isPressed
-              ? AppColors.accent.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          color: _pressed
+              ? AppColors.accent.withValues(alpha: 0.10)
+              : AppColors.background.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: _isPressed
-                ? AppColors.accent.withValues(alpha: 0.3)
-                : Colors.transparent,
+            color: _pressed ? AppColors.accentSoft : AppColors.border,
           ),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.border.withValues(alpha: 0.5),
+                gradient: AppColors.accentGradient,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(widget.icon, color: AppColors.background, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                widget.label,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              child: Icon(
-                widget.icon,
-                color: AppColors.accent,
-                size: 20,
-              ),
             ),
-            const SizedBox(width: 20),
-            Text(
-              widget.label,
-              style: textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textMuted.withValues(alpha: 0.5),
-              size: 20,
-            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
           ],
         ),
       ),

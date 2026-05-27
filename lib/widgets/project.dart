@@ -45,18 +45,26 @@ class ProjectSection extends StatelessWidget {
 
                       return SizedBox(
                         width: itemWidth,
-                        child: _ProjectTile(
-                          index: index,
-                          title: project['title'] as String,
-                          description: project['description'] as String,
-                          url: project['url'] as String,
-                          icon: project['icon'] as IconData,
-                          tags: (project['tags'] as List<dynamic>)
-                              .cast<String>(),
-                        ).animate().fadeIn(
-                              duration: 800.ms,
-                              delay: (index * 150).ms,
-                            ).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+                        child:
+                            _ProjectTile(
+                                  index: index,
+                                  title: project['title'] as String,
+                                  description: project['description'] as String,
+                                  url: project['url'] as String,
+                                  icon: project['icon'] as IconData,
+                                  tags: (project['tags'] as List<dynamic>)
+                                      .cast<String>(),
+                                )
+                                .animate()
+                                .fadeIn(
+                                  duration: 800.ms,
+                                  delay: (index * 150).ms,
+                                )
+                                .slideY(
+                                  begin: 0.1,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
                       );
                     }).toList(),
                   );
@@ -68,41 +76,6 @@ class ProjectSection extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  const _StatItem({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textMuted,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: color,
-            fontFamily: 'monospace',
-          ),
-        ),
-      ],
     );
   }
 }
@@ -297,18 +270,18 @@ class _ProjectTileState extends State<_ProjectTile> {
                 Positioned(
                   top: 0,
                   right: 0,
-                  child: Text(
-                    "#0${widget.index + 1}",
-                    style: TextStyle(
-                      color: AppColors.accent.withValues(alpha: 0.15),
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'monospace',
-                    ),
-                  ).animate(target: _isHovered ? 1 : 0).slideX(
-                        begin: 0,
-                        end: -0.1,
-                      ),
+                  child:
+                      Text(
+                            "#0${widget.index + 1}",
+                            style: TextStyle(
+                              color: AppColors.accent.withValues(alpha: 0.15),
+                              fontSize: 42,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'monospace',
+                            ),
+                          )
+                          .animate(target: _isHovered ? 1 : 0)
+                          .slideX(begin: 0, end: -0.1),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +303,9 @@ class _ProjectTileState extends State<_ProjectTile> {
                             boxShadow: [
                               if (_isHovered)
                                 BoxShadow(
-                                  color: AppColors.accent.withValues(alpha: 0.2),
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   blurRadius: 10,
                                   spreadRadius: 1,
                                 ),
@@ -345,20 +320,23 @@ class _ProjectTileState extends State<_ProjectTile> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.only(right: 60), // Add padding to avoid overlap with #0X
+                            padding: const EdgeInsets.only(
+                              right: 60,
+                            ), // Add padding to avoid overlap with #0X
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   widget.title,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 22,
-                                    height: 1.2,
-                                    color: _isHovered ? AppColors.accent : null,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 22,
+                                        height: 1.2,
+                                        color: _isHovered
+                                            ? AppColors.accent
+                                            : null,
+                                      ),
                                 ),
                               ],
                             ),
