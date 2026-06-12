@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:portfolio/constants/nav_items.dart';
 import 'package:portfolio/widgets/site_logo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HeaderDesktop extends StatelessWidget {
   const HeaderDesktop({
@@ -55,51 +56,62 @@ class HeaderDesktop extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          const _HeaderSignal(),
+          const _BlogButton(),
         ],
       ),
     );
   }
 }
 
-class _HeaderSignal extends StatelessWidget {
-  const _HeaderSignal();
+class _BlogButton extends StatefulWidget {
+  const _BlogButton();
+
+  @override
+  State<_BlogButton> createState() => _BlogButtonState();
+}
+
+class _BlogButtonState extends State<_BlogButton> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.26),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.success,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.5),
-                  blurRadius: 10,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: () => launchUrl(Uri.parse(blogUrl)),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _isHovered 
+                ? AppColors.accent.withValues(alpha: 0.12)
+                : AppColors.background.withValues(alpha: 0.26),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _isHovered ? AppColors.accent : AppColors.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_stories_rounded,
+                size: 16,
+                color: _isHovered ? AppColors.accent : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'BLOG',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: _isHovered ? AppColors.accent : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            'AI / ML',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

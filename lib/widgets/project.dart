@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:portfolio/constants/colors.dart';
@@ -17,8 +18,8 @@ class ProjectSection extends StatelessWidget {
     return Container(
       key: navbarKey,
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 20 : 32,
-        vertical: isCompact ? 46 : 60,
+        horizontal: isCompact ? 20 : 48,
+        vertical: isCompact ? 56 : 80,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -26,52 +27,44 @@ class ProjectSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _ProjectSectionHeader(),
-              const SizedBox(height: 32),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final columns = constraints.maxWidth >= 1100 ? 2 : 1;
-                  const spacing = 24.0;
-                  final itemWidth = columns == 1
-                      ? constraints.maxWidth
-                      : (constraints.maxWidth - spacing) / 2;
-
-                  return Wrap(
-                    spacing: spacing,
-                    runSpacing: spacing,
-                    children: projectItems.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final project = entry.value;
-
-                      return SizedBox(
-                        width: itemWidth,
-                        child:
-                            _ProjectTile(
-                                  index: index,
-                                  title: project['title'] as String,
-                                  description: project['description'] as String,
-                                  url: project['url'] as String,
-                                  icon: project['icon'] as IconData,
-                                  tags: (project['tags'] as List<dynamic>)
-                                      .cast<String>(),
-                                )
-                                .animate()
-                                .fadeIn(
-                                  duration: 800.ms,
-                                  delay: (index * 150).ms,
-                                )
-                                .slideY(
-                                  begin: 0.1,
-                                  end: 0,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                      );
-                    }).toList(),
-                  );
-                },
+              _ProjectSectionHeader(isCompact: isCompact),
+              SizedBox(height: isCompact ? 48 : 64),
+              ...projectItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final project = entry.value;
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index < projectItems.length - 1
+                        ? (isCompact ? 24 : 32)
+                        : 0,
+                  ),
+                  child: _FeaturedProjectCard(
+                    index: index,
+                    title: project['title'] as String,
+                    description: project['description'] as String,
+                    url: project['url'] as String,
+                    icon: project['icon'] as IconData,
+                    tags: (project['tags'] as List<dynamic>).cast<String>(),
+                    isCompact: isCompact,
+                  )
+                      .animate()
+                      .fadeIn(
+                    duration: 700.ms,
+                    delay: (index * 120).ms,
+                  )
+                      .slideY(
+                    begin: 0.08,
+                    end: 0,
+                    duration: 700.ms,
+                    delay: (index * 120).ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+                );
+              }),
+              SizedBox(height: isCompact ? 48 : 64),
+              Center(
+                child: const GitHubCTAButton(),
               ),
-              const SizedBox(height: 40),
-              const Center(child: GitHubCTAButton()),
             ],
           ),
         ),
@@ -81,57 +74,63 @@ class ProjectSection extends StatelessWidget {
 }
 
 class _ProjectSectionHeader extends StatelessWidget {
-  const _ProjectSectionHeader();
+  const _ProjectSectionHeader({required this.isCompact});
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.borderStrong),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.work_outline_rounded,
-                size: 16,
+        // Eyebrow label
+        Row(
+          children: [
+            Container(
+              width: 32,
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: AppColors.accentGradientStrong,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'SELECTED WORK',
+              style: TextStyle(
                 color: AppColors.accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2.5,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'SELECTED WORK',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1.0,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+            ),
+          ],
+        ),
+        SizedBox(height: isCompact ? 20 : 24),
+        // Main headline — big, bold, owning the page
+        RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: isCompact ? 36 : 56,
+              height: 1.05,
+              letterSpacing: -1.5,
+              color: AppColors.textPrimary,
+            ),
+            children: const [
+              TextSpan(text: 'Things I\n'),
+              TextSpan(text: "built."),
             ],
           ),
         ),
-        const SizedBox(height: 18),
-        Text(
-          'Projects that combine interface thinking, backend structure, and intelligent product behavior.',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            height: 1.12,
-            letterSpacing: -0.8,
-          ),
-        ),
-        const SizedBox(height: 14),
+        SizedBox(height: isCompact ? 16 : 20),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
+          constraints: const BoxConstraints(maxWidth: 560),
           child: Text(
-            'Each project is designed to be demonstrable, practical, and implementation-heavy, with an emphasis on systems that users can actually interact with.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            'Interface thinking, backend structure, intelligent behavior — each project is implementation-heavy and built to be used.',
+            style: TextStyle(
               color: AppColors.textSecondary,
-              height: 1.7,
+              fontSize: isCompact ? 15 : 17,
+              height: 1.65,
             ),
           ),
         ),
@@ -140,14 +139,15 @@ class _ProjectSectionHeader extends StatelessWidget {
   }
 }
 
-class _ProjectTile extends StatefulWidget {
-  const _ProjectTile({
+class _FeaturedProjectCard extends StatefulWidget {
+  const _FeaturedProjectCard({
     required this.index,
     required this.title,
     required this.description,
     required this.url,
     required this.icon,
     required this.tags,
+    required this.isCompact,
   });
 
   final int index;
@@ -156,253 +156,191 @@ class _ProjectTile extends StatefulWidget {
   final String url;
   final IconData icon;
   final List<String> tags;
+  final bool isCompact;
 
   @override
-  State<_ProjectTile> createState() => _ProjectTileState();
+  State<_FeaturedProjectCard> createState() => _FeaturedProjectCardState();
 }
 
-class _ProjectTileState extends State<_ProjectTile> {
+class _FeaturedProjectCardState extends State<_FeaturedProjectCard>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
-  Offset _mousePosition = Offset.zero;
+  Offset _mousePos = Offset.zero;
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
 
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    _glowAnimation = CurvedAnimation(
+      parent: _glowController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _launch() async {
+    final uri = Uri.parse(widget.url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
+      throw Exception('Could not launch ${widget.url}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 3D Tilt calculation
-    final double rotateX = _isHovered ? (_mousePosition.dy - 0.5) * -0.15 : 0;
-    final double rotateY = _isHovered ? (_mousePosition.dx - 0.5) * 0.15 : 0;
+    final double rotateX =
+    _isHovered ? (_mousePos.dy - 0.5) * -0.06 : 0;
+    final double rotateY =
+    _isHovered ? (_mousePos.dx - 0.5) * 0.06 : 0;
+
+    // Accent colors cycle per project for variety
+    final accentColors = [
+      AppColors.accent,
+      const Color(0xFF06B6D4),
+      const Color(0xFFA78BFA),
+      const Color(0xFFF472B6),
+    ];
+    final cardAccent = accentColors[widget.index % accentColors.length];
 
     return MouseRegion(
-      onEnter: (event) => setState(() => _isHovered = true),
-      onExit: (event) => setState(() => _isHovered = false),
-      onHover: (event) {
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() {
+        _isHovered = false;
+        _mousePos = Offset.zero;
+      }),
+      onHover: (e) {
         final box = context.findRenderObject() as RenderBox;
-        final localPos = box.globalToLocal(event.position);
+        final local = box.globalToLocal(e.position);
         setState(() {
-          _mousePosition = Offset(
-            localPos.dx / box.size.width,
-            localPos.dy / box.size.height,
+          _mousePos = Offset(
+            local.dx / box.size.width,
+            local.dy / box.size.height,
           );
         });
       },
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => _launchURL(widget.url),
+        onTap: _launch,
         child: TweenAnimationBuilder<v.Vector3>(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
           tween: Tween(
             begin: v.Vector3.zero(),
             end: v.Vector3(rotateX, rotateY, 0),
           ),
-          builder: (context, value, child) {
-            return Transform(
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001) // Perspective
-                ..rotateX(value.x)
-                ..rotateY(value.y),
-              alignment: Alignment.center,
-              child: child,
-            );
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _isHovered ? AppColors.surface : AppColors.surfaceGlass,
-                  AppColors.backgroundElevated,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: _isHovered
-                    ? AppColors.accent.withValues(alpha: 0.6)
-                    : AppColors.borderStrong.withValues(alpha: 0.6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                if (_isHovered)
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.15),
-                    blurRadius: 40,
-                    offset: Offset(
-                      (_mousePosition.dx - 0.5) * 20,
-                      (_mousePosition.dy - 0.5) * 20 + 15,
-                    ),
+          builder: (context, rot, child) => Transform(
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.0008)
+              ..rotateX(rot.x)
+              ..rotateY(rot.y),
+            alignment: Alignment.center,
+            child: child,
+          ),
+          child: AnimatedBuilder(
+            animation: _glowAnimation,
+            builder: (context, child) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: _isHovered
+                        ? cardAccent.withValues(alpha: 0.55)
+                        : AppColors.borderStrong.withValues(alpha: 0.45),
+                    width: 1.5,
                   ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Reactive Spotlight Glow
-                if (_isHovered)
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment(
-                        (_mousePosition.dx - 0.5) * 2,
-                        (_mousePosition.dy - 0.5) * 2,
-                      ),
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.accent.withValues(alpha: 0.08),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _isHovered
+                        ? [
+                      AppColors.surface,
+                      AppColors.backgroundElevated,
+                    ]
+                        : [
+                      AppColors.surfaceGlass,
+                      AppColors.backgroundElevated,
+                    ],
                   ),
-                // Project Serial Number
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child:
-                      Text(
-                            "#0${widget.index + 1}",
-                            style: TextStyle(
-                              color: AppColors.accent.withValues(alpha: 0.15),
-                              fontSize: 42,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'monospace',
-                            ),
-                          )
-                          .animate(target: _isHovered ? 1 : 0)
-                          .slideX(begin: 0, end: -0.1),
+                  boxShadow: _isHovered
+                      ? [
+                    BoxShadow(
+                      color: cardAccent.withValues(alpha: 0.18),
+                      blurRadius: 60,
+                      spreadRadius: -8,
+                      offset: const Offset(0, 24),
+                    ),
+                  ]
+                      : [],
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 52,
-                          width: 52,
+                child: child,
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                children: [
+                  // Reactive mouse-follow spotlight
+                  if (_isHovered)
+                    Positioned(
+                      left: _mousePos.dx *
+                          (MediaQuery.of(context).size.width.clamp(
+                            0,
+                            1240,
+                          ) -
+                              200) -
+                          100,
+                      top: _mousePos.dy * 300 - 100,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 300,
+                          height: 300,
                           decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: _isHovered
-                                  ? AppColors.accent.withValues(alpha: 0.3)
-                                  : AppColors.border,
-                            ),
-                            boxShadow: [
-                              if (_isHovered)
-                                BoxShadow(
-                                  color: AppColors.accent.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                  blurRadius: 10,
-                                  spreadRadius: 1,
-                                ),
-                            ],
-                          ),
-                          child: Icon(
-                            widget.icon,
-                            color: AppColors.accent,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              right: 60,
-                            ), // Add padding to avoid overlap with #0X
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.title,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 22,
-                                        height: 1.2,
-                                        color: _isHovered
-                                            ? AppColors.accent
-                                            : null,
-                                      ),
-                                ),
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                cardAccent.withValues(alpha: 0.07),
+                                Colors.transparent,
                               ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      widget.description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: _isHovered
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
-                        height: 1.6,
-                        fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      "TECHNOLOGY STACK",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textMuted,
-                        letterSpacing: 1.5,
-                      ),
+
+                  Padding(
+                    padding: EdgeInsets.all(widget.isCompact ? 24 : 36),
+                    child: widget.isCompact
+                        ? _CardBodyCompact(
+                      index: widget.index,
+                      title: widget.title,
+                      description: widget.description,
+                      icon: widget.icon,
+                      tags: widget.tags,
+                      isHovered: _isHovered,
+                      cardAccent: cardAccent,
+                    )
+                        : _CardBodyDesktop(
+                      index: widget.index,
+                      title: widget.title,
+                      description: widget.description,
+                      icon: widget.icon,
+                      tags: widget.tags,
+                      isHovered: _isHovered,
+                      cardAccent: cardAccent,
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: widget.tags.map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _isHovered
-                                ? AppColors.accent.withValues(alpha: 0.08)
-                                : AppColors.background.withValues(alpha: 0.38),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: _isHovered
-                                  ? AppColors.accent.withValues(alpha: 0.2)
-                                  : AppColors.border,
-                            ),
-                          ),
-                          child: Text(
-                            tag,
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(
-                                  color: _isHovered
-                                      ? AppColors.textPrimary
-                                      : AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -411,6 +349,356 @@ class _ProjectTileState extends State<_ProjectTile> {
   }
 }
 
+// ── Desktop layout: giant index number left, content right ─────────────────
+class _CardBodyDesktop extends StatelessWidget {
+  const _CardBodyDesktop({
+    required this.index,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.tags,
+    required this.isHovered,
+    required this.cardAccent,
+  });
+
+  final int index;
+  final String title;
+  final String description;
+  final IconData icon;
+  final List<String> tags;
+  final bool isHovered;
+  final Color cardAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Left: giant ordinal number ──────────────────────────────────
+          SizedBox(
+            width: 140,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Big number
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 300),
+                  style: TextStyle(
+                    fontSize: 96,
+                    fontWeight: FontWeight.w900,
+                    height: 0.9,
+                    letterSpacing: -4,
+                    color: isHovered
+                        ? cardAccent.withValues(alpha: 0.25)
+                        : AppColors.textPrimary.withValues(alpha: 0.07),
+                  ),
+                  child: Text(
+                    '${(index + 1).toString().padLeft(2, '0')}',
+                  ),
+                ),
+                // Vertical accent line
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 2,
+                  height: isHovered ? 48 : 32,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        cardAccent,
+                        cardAccent.withValues(alpha: 0),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Vertical divider ────────────────────────────────────────────
+          Container(
+            width: 1,
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            color: AppColors.borderStrong.withValues(alpha: 0.3),
+          ),
+          const SizedBox(width: 36),
+
+          // ── Right: all content ──────────────────────────────────────────
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon in a styled container
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: 56,
+                      width: 56,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? cardAccent.withValues(alpha: 0.12)
+                            : AppColors.background,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isHovered
+                              ? cardAccent.withValues(alpha: 0.4)
+                              : AppColors.border,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(icon, color: cardAccent, size: 26),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 250),
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                              letterSpacing: -0.5,
+                              color: isHovered
+                                  ? cardAccent
+                                  : AppColors.textPrimary,
+                            ),
+                            child: Text(title),
+                          ),
+                          const SizedBox(height: 4),
+                          // Arrow indicator
+                          AnimatedOpacity(
+                            opacity: isHovered ? 1 : 0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'View project',
+                                  style: TextStyle(
+                                    color: cardAccent,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 14,
+                                  color: cardAccent,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Top accent bar — full width, thin, vivid
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        cardAccent.withValues(alpha: isHovered ? 0.7 : 0.2),
+                        Colors.transparent,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: isHovered
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                    fontSize: 15.5,
+                    height: 1.68,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // Tech stack
+                _TechStack(tags: tags, isHovered: isHovered, accent: cardAccent),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Mobile/compact layout: stacked ────────────────────────────────────────
+class _CardBodyCompact extends StatelessWidget {
+  const _CardBodyCompact({
+    required this.index,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.tags,
+    required this.isHovered,
+    required this.cardAccent,
+  });
+
+  final int index;
+  final String title;
+  final String description;
+  final IconData icon;
+  final List<String> tags;
+  final bool isHovered;
+  final Color cardAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            // Small index badge
+            Text(
+              '${(index + 1).toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+                color: cardAccent.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              height: 1,
+              width: 24,
+              color: cardAccent.withValues(alpha: 0.3),
+            ),
+            const Spacer(),
+            Icon(icon, color: cardAccent, size: 22),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            height: 1.15,
+            letterSpacing: -0.4,
+            color: isHovered ? cardAccent : AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 1.5,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                cardAccent.withValues(alpha: isHovered ? 0.7 : 0.2),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          description,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14.5,
+            height: 1.65,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _TechStack(tags: tags, isHovered: isHovered, accent: cardAccent),
+      ],
+    );
+  }
+}
+
+// ── Shared tech stack chip row ─────────────────────────────────────────────
+class _TechStack extends StatelessWidget {
+  const _TechStack({
+    required this.tags,
+    required this.isHovered,
+    required this.accent,
+  });
+
+  final List<String> tags;
+  final bool isHovered;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'STACK',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textMuted,
+            letterSpacing: 2.0,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: tags.asMap().entries.map((e) {
+            final i = e.key;
+            final tag = e.value;
+            return AnimatedContainer(
+              duration: Duration(milliseconds: 200 + i * 40),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              decoration: BoxDecoration(
+                color: isHovered
+                    ? accent.withValues(alpha: 0.1)
+                    : AppColors.background.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isHovered
+                      ? accent.withValues(alpha: 0.28)
+                      : AppColors.border.withValues(alpha: 0.7),
+                ),
+              ),
+              child: Text(
+                tag,
+                style: TextStyle(
+                  color: isHovered
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12.5,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+// ── GitHub CTA ─────────────────────────────────────────────────────────────
 class GitHubCTAButton extends StatefulWidget {
   const GitHubCTAButton({super.key});
 
@@ -436,41 +724,62 @@ class _GitHubCTAButtonState extends State<GitHubCTAButton> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: _launchGitHub,
-        child: Transform.translate(
-          offset: Offset(0, _isHovered ? -4 : 0),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              gradient: _isHovered ? AppColors.accentGradient : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.translationValues(0, _isHovered ? -3 : 0, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: _isHovered ? AppColors.accentGradient : null,
+            color: _isHovered ? null : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
               color: _isHovered
-                  ? null
-                  : AppColors.surface.withValues(alpha: 0.84),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _isHovered ? Colors.transparent : AppColors.borderStrong,
-              ),
+                  ? Colors.transparent
+                  : AppColors.borderStrong,
+              width: 1.5,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.code_rounded,
+            boxShadow: _isHovered
+                ? [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              )
+            ]
+                : [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.code_rounded,
+                size: 18,
+                color: _isHovered ? AppColors.background : AppColors.accent,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'More on GitHub',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: _isHovered
+                      ? AppColors.background
+                      : AppColors.textPrimary,
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform:
+                Matrix4.translationValues(_isHovered ? 4 : 0, 0, 0),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 16,
                   color: _isHovered ? AppColors.background : AppColors.accent,
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  'View more on GitHub',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: _isHovered
-                        ? AppColors.background
-                        : AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

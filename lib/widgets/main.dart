@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart' as v;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
 import 'package:portfolio/constants/colors.dart';
@@ -11,9 +12,14 @@ import 'package:portfolio/constants/size.dart';
 import 'package:portfolio/constants/skill_items.dart';
 
 class MainSection extends StatefulWidget {
-  const MainSection({super.key, required this.navbarKeys});
+  const MainSection({
+    super.key,
+    required this.navbarKeys,
+    required this.scrollController,
+  });
 
   final List<GlobalKey> navbarKeys;
+  final ScrollController scrollController;
 
   @override
   State<MainSection> createState() => _MainSectionState();
@@ -21,52 +27,46 @@ class MainSection extends StatefulWidget {
 
 class _MainSectionState extends State<MainSection>
     with TickerProviderStateMixin {
-  late final AnimationController _entranceController;
-  late final AnimationController _orbitController;
+  late final AnimationController _entrance;
+  late final AnimationController _orbit;
 
   @override
   void initState() {
     super.initState();
-    _entranceController = AnimationController(
+    _entrance = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1150),
+      duration: const Duration(milliseconds: 1200),
     );
-    _orbitController = AnimationController(
+    _orbit = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 9),
+      duration: const Duration(seconds: 10),
     )..repeat();
 
-    Future.delayed(const Duration(milliseconds: 150), () {
-      if (mounted) {
-        _entranceController.forward();
-      }
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _entrance.forward();
     });
   }
 
   @override
   void dispose() {
-    _entranceController.dispose();
-    _orbitController.dispose();
+    _entrance.dispose();
+    _orbit.dispose();
     super.dispose();
   }
 
-  Widget _buildAnimatedChild({
+  Widget _stagger({
     required Widget child,
-    required double intervalStart,
-    required Offset slideOffset,
+    required double from,
+    Offset slide = const Offset(0, 0.18),
   }) {
-    final animation = CurvedAnimation(
-      parent: _entranceController,
-      curve: Interval(intervalStart, 1.0, curve: Curves.easeOutCubic),
+    final anim = CurvedAnimation(
+      parent: _entrance,
+      curve: Interval(from, 1.0, curve: Curves.easeOutCubic),
     );
-
     return FadeTransition(
-      opacity: animation,
+      opacity: anim,
       child: SlideTransition(
-        position: Tween<Offset>(
-          begin: slideOffset,
-          end: Offset.zero,
-        ).animate(animation),
+        position: Tween(begin: slide, end: Offset.zero).animate(anim),
         child: child,
       ),
     );
@@ -76,567 +76,653 @@ class _MainSectionState extends State<MainSection>
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < kMinDesktopWidth;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        isMobile ? 20 : 32,
-        isMobile ? 24 : 34,
-        isMobile ? 20 : 32,
-        isMobile ? 28 : 34,
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1280),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.surfaceGlass, AppColors.backgroundElevated],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(color: AppColors.borderStrong),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.24),
-                blurRadius: 30,
-                offset: const Offset(0, 22),
+    return AnimatedBuilder(
+      animation: widget.scrollController,
+      builder: (context, _) {
+        final scroll = (widget.scrollController.hasClients &&
+            widget.scrollController.position.hasContentDimensions)
+            ? widget.scrollController.offset
+            : 0.0;
+
+        final exit = Curves.easeInOutQuart
+            .transform((scroll / 600.0).clamp(0.0, 1.0));
+
+        final matrix = Matrix4.identity()
+          ..setEntry(3, 2, 0.0007)
+          ..translateByVector3(v.Vector3(0.0, exit * -100.0, exit * 600.0))
+          ..rotateX(exit * -14.0 * pi / 180.0);
+
+        return Transform(
+          transform: matrix,
+          alignment: Alignment.center,
+          child: Opacity(
+            opacity: (1.0 - exit * 1.4).clamp(0.0, 1.0),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 24 : 64,
+                isMobile ? 32 : 48,
+                isMobile ? 24 : 64,
+                isMobile ? 40 : 56,
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              const Positioned(top: 0, right: 0, child: _HeroGlow()),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(painter: _HeroGridPainter()),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1240),
+                  child: isMobile
+                      ? _MobileLayout(stagger: _stagger, orbit: _orbit,
+                      navbarKeys: widget.navbarKeys)
+                      : _DesktopLayout(stagger: _stagger, orbit: _orbit,
+                      navbarKeys: widget.navbarKeys),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.all(isMobile ? 22 : 30),
-                child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildDesktopLayout() {
+// ── Desktop layout ────────────────────────────────────────────────────────────
+class _DesktopLayout extends StatelessWidget {
+  const _DesktopLayout({
+    required this.stagger,
+    required this.orbit,
+    required this.navbarKeys,
+  });
+
+  final Widget Function({
+  required Widget child,
+  required double from,
+  Offset slide,
+  }) stagger;
+  final AnimationController orbit;
+  final List<GlobalKey> navbarKeys;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Left — headline + copy + CTAs
         Expanded(
           flex: 6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildAnimatedChild(
-                intervalStart: 0.0,
-                slideOffset: const Offset(0, 0.25),
-                child: const _SectionBadge(
-                  label: 'AI ENGINEER',
-                  icon: Icons.psychology_alt_rounded,
-                ),
-              ),
-              const SizedBox(height: 18),
-              _buildAnimatedChild(
-                intervalStart: 0.08,
-                slideOffset: const Offset(0, 0.22),
-                child: _buildHeadline(),
-              ),
-              const SizedBox(height: 14),
-              _buildAnimatedChild(
-                intervalStart: 0.16,
-                slideOffset: const Offset(0, 0.2),
-                child: _buildSubText(),
-              ),
-              const SizedBox(height: 20),
-              _buildAnimatedChild(
-                intervalStart: 0.24,
-                slideOffset: const Offset(0, 0.18),
-                child: _buildDescription(),
-              ),
-              const SizedBox(height: 22),
-              _buildAnimatedChild(
-                intervalStart: 0.32,
-                slideOffset: const Offset(0, 0.18),
-                child: const _HeroFocusRow(),
-              ),
-              const SizedBox(height: 24),
-              _buildAnimatedChild(
-                intervalStart: 0.42,
-                slideOffset: const Offset(0, 0.15),
-                child: _buildMetrics(),
-              ),
-              const SizedBox(height: 28),
-              _buildAnimatedChild(
-                intervalStart: 0.5,
-                slideOffset: const Offset(0, 0.14),
-                child: _buildButtons(),
-              ),
-            ],
-          ),
+          child: _LeftContent(stagger: stagger, navbarKeys: navbarKeys),
         ),
-        const SizedBox(width: 30),
+        const SizedBox(width: 56),
+        // Right — status card
         Expanded(
           flex: 4,
-          child: _buildAnimatedChild(
-            intervalStart: 0.14,
-            slideOffset: const Offset(0.06, 0),
-            child: _HeroTechPanel(orbitController: _orbitController),
+          child: stagger(
+            from: 0.2,
+            slide: const Offset(0.05, 0),
+            child: _StatusCard(orbit: orbit),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildMobileLayout() {
+// ── Mobile layout ─────────────────────────────────────────────────────────────
+class _MobileLayout extends StatelessWidget {
+  const _MobileLayout({
+    required this.stagger,
+    required this.orbit,
+    required this.navbarKeys,
+  });
+
+  final Widget Function({
+  required Widget child,
+  required double from,
+  Offset slide,
+  }) stagger;
+  final AnimationController orbit;
+  final List<GlobalKey> navbarKeys;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildAnimatedChild(
-          intervalStart: 0.0,
-          slideOffset: const Offset(0, 0.25),
-          child: const _SectionBadge(
-            label: 'AI ENGINEER',
-            icon: Icons.psychology_alt_rounded,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildAnimatedChild(
-          intervalStart: 0.08,
-          slideOffset: const Offset(0, 0.22),
-          child: _buildHeadline(isMobile: true),
-        ),
-        const SizedBox(height: 14),
-        _buildAnimatedChild(
-          intervalStart: 0.16,
-          slideOffset: const Offset(0, 0.2),
-          child: _buildSubText(),
-        ),
-        const SizedBox(height: 18),
-        _buildAnimatedChild(
-          intervalStart: 0.24,
-          slideOffset: const Offset(0, 0.18),
-          child: _buildDescription(),
-        ),
-        const SizedBox(height: 20),
-        _buildAnimatedChild(
-          intervalStart: 0.32,
-          slideOffset: const Offset(0, 0.18),
-          child: const _HeroFocusRow(),
-        ),
-        const SizedBox(height: 22),
-        _buildAnimatedChild(
-          intervalStart: 0.42,
-          slideOffset: const Offset(0, 0.15),
-          child: _buildMetrics(),
-        ),
-        const SizedBox(height: 24),
-        _buildAnimatedChild(
-          intervalStart: 0.5,
-          slideOffset: const Offset(0, 0.14),
-          child: _buildButtons(),
-        ),
-        const SizedBox(height: 24),
-        _buildAnimatedChild(
-          intervalStart: 0.18,
-          slideOffset: const Offset(0, 0.12),
-          child: _HeroTechPanel(orbitController: _orbitController),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeadline({bool isMobile = false}) {
-    return Text(
-      'Building computer vision systems, deep learning workflows, and AI products that ship.',
-      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-        fontSize: isMobile ? 34 : 54,
-        fontWeight: FontWeight.w700,
-        height: 1.02,
-        letterSpacing: -1.35,
-      ),
-    );
-  }
-
-  Widget _buildSubText() {
-    return const _CyclingSubtext();
-  }
-
-  Widget _buildDescription() {
-    return Text(
-      'Focused on real-time perception, model training, inference APIs, research loops, and the product layer that makes ML usable.',
-      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-        fontSize: 15.5,
-        height: 1.68,
-        color: AppColors.textSecondary,
-      ),
-    );
-  }
-
-  Widget _buildMetrics() {
-    final totalSkills = categorizedSkills.values.fold<int>(
-      0,
-      (total, items) => total + items.length,
-    );
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _MetricPill(
-          value: '${projectItems.length}+',
-          label: 'AI-led builds',
-          icon: Icons.auto_awesome_rounded,
-        ),
-        _MetricPill(
-          value: '${categorizedSkills.length}',
-          label: 'core domains',
-          icon: Icons.hub_rounded,
-        ),
-        _MetricPill(
-          value: '$totalSkills',
-          label: 'active skills',
-          icon: Icons.layers_rounded,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildButtons() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _AnimatedCTAButton(
-          label: 'View Work',
-          icon: Icons.arrow_outward_rounded,
-          isPrimary: true,
-          onPressed: () => NavigationHelper.scrollToSection(
-            context: context,
-            navIndex: 2,
-            navbarKeys: widget.navbarKeys,
-          ),
-        ),
-        _AnimatedCTAButton(
-          label: 'AI Stack',
-          icon: Icons.psychology_alt_rounded,
-          onPressed: () => NavigationHelper.scrollToSection(
-            context: context,
-            navIndex: 1,
-            navbarKeys: widget.navbarKeys,
-          ),
-        ),
-        _AnimatedCTAButton(
-          label: 'Contact',
-          icon: Icons.mail_outline_rounded,
-          onPressed: () => NavigationHelper.scrollToSection(
-            context: context,
-            navIndex: 3,
-            navbarKeys: widget.navbarKeys,
-          ),
+        _LeftContent(stagger: stagger, navbarKeys: navbarKeys),
+        const SizedBox(height: 36),
+        stagger(
+          from: 0.5,
+          child: _StatusCard(orbit: orbit),
         ),
       ],
     );
   }
 }
 
-class _HeroGlow extends StatelessWidget {
-  const _HeroGlow();
+// ── Left column ───────────────────────────────────────────────────────────────
+class _LeftContent extends StatelessWidget {
+  const _LeftContent({required this.stagger, required this.navbarKeys});
+
+  final Widget Function({
+  required Widget child,
+  required double from,
+  Offset slide,
+  }) stagger;
+  final List<GlobalKey> navbarKeys;
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        height: 260,
-        width: 260,
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            colors: [
-              AppColors.accentSoft.withValues(alpha: 0.22),
-              Colors.transparent,
+    final isMobile = MediaQuery.of(context).size.width < kMinDesktopWidth;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Eyebrow
+        stagger(
+          from: 0.0,
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accent,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.5),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'AI ENGINEER  ·  COMPUTER VISION  ·  ROS',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.0,
+                ),
+              ),
             ],
           ),
         ),
-      ),
+
+        SizedBox(height: isMobile ? 20 : 28),
+
+        // Massive headline — two lines, max impact
+        stagger(
+          from: 0.06,
+          slide: const Offset(0, 0.12),
+          child: _Headline(isMobile: isMobile),
+        ),
+
+        SizedBox(height: isMobile ? 20 : 24),
+
+        // Cycling role title
+        stagger(
+          from: 0.18,
+          child: const _CyclingSubtext(),
+        ),
+
+        SizedBox(height: isMobile ? 16 : 20),
+
+        // Single clean description — one job
+        stagger(
+          from: 0.24,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: Text(
+              'Building perception systems, training pipelines, and inference APIs that make ML usable in production.',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: isMobile ? 15 : 16.5,
+                height: 1.65,
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: isMobile ? 28 : 36),
+
+        // Two decisive CTAs only
+        stagger(
+          from: 0.32,
+          child: _CTARow(navbarKeys: navbarKeys),
+        ),
+
+        SizedBox(height: isMobile ? 28 : 40),
+
+        // Metrics — horizontal, no icon boxes
+        stagger(
+          from: 0.42,
+          child: const _MetricsRow(),
+        ),
+      ],
     );
   }
 }
 
-class _HeroGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.border.withValues(alpha: 0.12)
-      ..strokeWidth = 1;
-
-    for (double x = 24; x < size.width; x += 28) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 24; y < size.height; y += 28) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _SectionBadge extends StatelessWidget {
-  const _SectionBadge({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
+// ── Headline ──────────────────────────────────────────────────────────────────
+class _Headline extends StatelessWidget {
+  const _Headline({required this.isMobile});
+  final bool isMobile;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.30),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.borderStrong),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.accent),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.1,
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: isMobile ? 46 : 72,
+          fontWeight: FontWeight.w900,
+          height: 0.95,
+          letterSpacing: isMobile ? -2.0 : -3.0,
+          color: AppColors.textPrimary,
+        ),
+        children: const [
+          TextSpan(text: 'I build\n'),
+          TextSpan(text: 'AI '),
+          // Accent word
+          TextSpan(
+            text: 'systems',
+            style: TextStyle(
+              color: Color(0xFF6C63FF), // AppColors.accent
+              fontStyle: FontStyle.italic,
             ),
           ),
+          TextSpan(text: '\nthat ship.'),
         ],
       ),
     );
   }
 }
 
-class _HeroFocusRow extends StatelessWidget {
-  const _HeroFocusRow();
+// ── CTA row — two buttons, decisive ──────────────────────────────────────────
+class _CTARow extends StatelessWidget {
+  const _CTARow({required this.navbarKeys});
+  final List<GlobalKey> navbarKeys;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      'Computer Vision',
-      'Deep Learning',
-      'ROS / Robotics',
-      'Inference APIs',
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        _CTAButton(
+          label: 'View work',
+          icon: Icons.arrow_outward_rounded,
+          isPrimary: true,
+          onTap: () => NavigationHelper.scrollToSection(
+            context: context,
+            navIndex: 2,
+            navbarKeys: navbarKeys,
+          ),
+        ),
+        _CTAButton(
+          label: 'Get in touch',
+          icon: Icons.mail_outline_rounded,
+          onTap: () => NavigationHelper.scrollToSection(
+            context: context,
+            navIndex: 3,
+            navbarKeys: navbarKeys,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CTAButton extends StatefulWidget {
+  const _CTAButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  State<_CTAButton> createState() => _CTAButtonState();
+}
+
+class _CTAButtonState extends State<_CTAButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: widget.isPrimary ? AppColors.accentGradientStrong : null,
+            color: widget.isPrimary
+                ? null
+                : _hovered
+                ? AppColors.surface
+                : AppColors.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(14),
+            border: widget.isPrimary
+                ? null
+                : Border.all(
+              color: _hovered
+                  ? AppColors.borderStrong
+                  : AppColors.borderStrong.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+            boxShadow: _hovered
+                ? [
+              BoxShadow(
+                color: widget.isPrimary
+                    ? AppColors.accent.withValues(alpha: 0.35)
+                    : Colors.black.withValues(alpha: 0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ]
+                : [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: widget.isPrimary
+                      ? AppColors.background
+                      : AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                widget.icon,
+                size: 16,
+                color: widget.isPrimary
+                    ? AppColors.background
+                    : AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Metrics — flat, no icon boxes ────────────────────────────────────────────
+class _MetricsRow extends StatelessWidget {
+  const _MetricsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final totalSkills = categorizedSkills.values
+        .fold<int>(0, (s, items) => s + items.length);
+
+    final items = [
+      ('${projectItems.length}+', 'projects'),
+      ('${categorizedSkills.length}', 'domains'),
+      ('$totalSkills', 'skills'),
     ];
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: items.map((item) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.30),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Text(
-            item,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: items.asMap().entries.map((e) {
+        final i = e.key;
+        final item = e.value;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (i > 0)
+              Container(
+                width: 1,
+                height: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                color: AppColors.borderStrong.withValues(alpha: 0.4),
+              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.$1,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
+                    letterSpacing: -1.0,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.$2,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
             ),
-          ),
+          ],
         );
       }).toList(),
     );
   }
 }
 
-class _MetricPill extends StatelessWidget {
-  const _MetricPill({
-    required this.value,
-    required this.label,
-    required this.icon,
-  });
+// ── Status card — right panel ─────────────────────────────────────────────────
+class _StatusCard extends StatefulWidget {
+  const _StatusCard({required this.orbit});
+  final AnimationController orbit;
 
-  final String value;
-  final String label;
-  final IconData icon;
+  @override
+  State<_StatusCard> createState() => _StatusCardState();
+}
+
+class _StatusCardState extends State<_StatusCard> {
+  bool _hovered = false;
+  Offset _mouse = const Offset(0.5, 0.5);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.32),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 36,
-            width: 36,
-            decoration: BoxDecoration(
-              gradient: AppColors.accentGradient,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 18, color: AppColors.background),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroTechPanel extends StatefulWidget {
-  const _HeroTechPanel({required this.orbitController});
-
-  final AnimationController orbitController;
-
-  @override
-  State<_HeroTechPanel> createState() => _HeroTechPanelState();
-}
-
-class _HeroTechPanelState extends State<_HeroTechPanel> {
-  bool _isHovered = false;
-  Offset _pointer = const Offset(180, 180);
-
-  @override
-  Widget build(BuildContext context) {
-    final tiltX = _isHovered ? ((_pointer.dy - 190) / 190) * 0.05 : 0.0;
-    final tiltY = _isHovered ? -((_pointer.dx - 180) / 180) * 0.05 : 0.0;
+    final tX = _hovered ? ((_mouse.dy - 0.5) * -0.06) : 0.0;
+    final tY = _hovered ? ((_mouse.dx - 0.5) * 0.06) : 0.0;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      onHover: (event) => setState(() => _pointer = event.localPosition),
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() {
+        _hovered = false;
+        _mouse = const Offset(0.5, 0.5);
+      }),
+      onHover: (e) {
+        final box = context.findRenderObject() as RenderBox;
+        final local = box.globalToLocal(e.position);
+        setState(() {
+          _mouse = Offset(
+            local.dx / box.size.width,
+            local.dy / box.size.height,
+          );
+        });
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         transform: Matrix4.identity()
           ..setEntry(3, 2, 0.001)
-          ..rotateX(tiltX)
-          ..rotateY(tiltY),
-        padding: const EdgeInsets.all(22),
+          ..rotateX(tX)
+          ..rotateY(tY),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.background.withValues(alpha: 0.44),
-          borderRadius: BorderRadius.circular(30),
+          color: AppColors.surfaceGlass,
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: _isHovered ? AppColors.accentSoft : AppColors.borderStrong,
+            color: _hovered
+                ? AppColors.accent.withValues(alpha: 0.3)
+                : AppColors.borderStrong.withValues(alpha: 0.5),
+            width: 1.5,
           ),
-          boxShadow: [
+          boxShadow: _hovered
+              ? [
             BoxShadow(
-              color: (_isHovered ? AppColors.accentSoft : Colors.black)
-                  .withValues(alpha: _isHovered ? 0.16 : 0.18),
-              blurRadius: _isHovered ? 28 : 20,
-              offset: const Offset(0, 16),
+              color: AppColors.accent.withValues(alpha: 0.1),
+              blurRadius: 40,
+              offset: const Offset(0, 20),
             ),
-          ],
+          ]
+              : [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Card header
             Row(
               children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF22C55E),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.5),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scaleXY(begin: 0.8, end: 1.2, duration: 1400.ms),
+                const SizedBox(width: 8),
                 Text(
-                  'Live Focus',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  'Available for work',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF22C55E),
+                  ),
                 ),
                 const Spacer(),
-                const _StatusChip(label: 'AI / ML'),
+                Text(
+                  'IN · 2026',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            // Lottie animation in a contained box
             Container(
-              height: 240,
+              height: 200,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: const LinearGradient(
-                  colors: [AppColors.surfaceAlt, AppColors.backgroundElevated],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                color: AppColors.backgroundElevated,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.4),
                 ),
-                border: Border.all(color: AppColors.border),
               ),
-              child: AnimatedBuilder(
-                animation: widget.orbitController,
-                builder: (context, child) {
-                  final angle = widget.orbitController.value * 2 * pi;
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        top: 24 + sin(angle) * 12,
-                        right: 34 + cos(angle) * 10,
-                        child: const _OrbitalNode(label: 'Vision'),
-                      ),
-                      Positioned(
-                        left: 24 + sin(angle + 1.3) * 10,
-                        bottom: 36 + cos(angle + 0.8) * 12,
-                        child: const _OrbitalNode(label: 'Models'),
-                      ),
-                      Positioned(
-                        right: 28 + sin(angle + 2.1) * 8,
-                        bottom: 42 + cos(angle + 2.1) * 10,
-                        child: const _OrbitalNode(label: 'Agents'),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => AppColors
-                              .accentGradientStrong
-                              .createShader(bounds),
-                          blendMode: BlendMode.srcATop,
-                          child: Lottie.asset(
-                            'assets/animations/dev.json',
-                            fit: BoxFit.contain,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Orbital nodes around the lottie
+                  AnimatedBuilder(
+                    animation: widget.orbit,
+                    builder: (_, __) {
+                      final a = widget.orbit.value * 2 * pi;
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Positioned(
+                            top: 16 + sin(a) * 14,
+                            right: 20 + cos(a) * 10,
+                            child: const _Node(label: 'Vision'),
                           ),
-                        ),
+                          Positioned(
+                            left: 16 + sin(a + 1.4) * 10,
+                            bottom: 20 + cos(a + 1.0) * 12,
+                            child: const _Node(label: 'Models'),
+                          ),
+                          Positioned(
+                            right: 20 + sin(a + 2.2) * 8,
+                            bottom: 32 + cos(a + 2.2) * 10,
+                            child: const _Node(label: 'ROS'),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) =>
+                          AppColors.accentGradientStrong.createShader(bounds),
+                      blendMode: BlendMode.srcATop,
+                      child: Lottie.asset(
+                        'assets/animations/dev.json',
+                        fit: BoxFit.contain,
                       ),
-                      const _SweepRing(),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 18),
-            const _FocusRow(
-              label: 'Primary',
-              value: 'vision, inference, robotics',
-            ),
+
+            const SizedBox(height: 20),
+
+            // Terminal-style focus lines
+            _TerminalLine(label: 'focus', value: 'vision · inference · robotics'),
             const SizedBox(height: 10),
-            const _FocusRow(
-              label: 'Delivery',
-              value: 'APIs, demos, real-time UX',
-            ),
+            _TerminalLine(label: 'stack', value: 'Python · C++ · Flutter · ROS2'),
             const SizedBox(height: 10),
-            const _FocusRow(
-              label: 'Side lane',
-              value: 'Flutter / Android client work',
+            _TerminalLine(label: 'open\xa0to', value: 'roles, builds, collabs'),
+
+            const SizedBox(height: 20),
+
+            // Divider
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.accent.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Skill domain chips — compact
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: const [
+                _DomainChip(label: 'Deep Learning'),
+                _DomainChip(label: 'CV pipelines'),
+                _DomainChip(label: 'Inference APIs'),
+                _DomainChip(label: 'Flutter'),
+              ],
             ),
           ],
         ),
@@ -645,93 +731,37 @@ class _HeroTechPanelState extends State<_HeroTechPanel> {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label});
-
+class _Node extends StatelessWidget {
+  const _Node({required this.label});
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.15),
+        color: AppColors.background.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.25),
+        ),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: AppColors.success,
+        style: TextStyle(
+          fontSize: 10.5,
           fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
         ),
       ),
-    );
+    )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .scaleXY(begin: 0.95, end: 1.05, duration: 1600.ms);
   }
 }
 
-class _OrbitalNode extends StatelessWidget {
-  const _OrbitalNode({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.borderStrong),
-          ),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .scale(
-          begin: const Offset(0.96, 0.96),
-          end: const Offset(1.04, 1.04),
-          duration: 1400.ms,
-        );
-  }
-}
-
-class _SweepRing extends StatelessWidget {
-  const _SweepRing();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child:
-          Container(
-                width: 188,
-                height: 188,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.16),
-                    width: 1.2,
-                  ),
-                ),
-              )
-              .animate(onPlay: (controller) => controller.repeat())
-              .custom(
-                duration: 3.seconds,
-                builder: (context, value, child) {
-                  return Transform.rotate(angle: value * 2 * pi, child: child);
-                },
-              ),
-    );
-  }
-}
-
-class _FocusRow extends StatelessWidget {
-  const _FocusRow({required this.label, required this.value});
-
+class _TerminalLine extends StatelessWidget {
+  const _TerminalLine({required this.label, required this.value});
   final String label;
   final String value;
 
@@ -740,22 +770,34 @@ class _FocusRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          '→',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.accent,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 8),
         SizedBox(
-          width: 68,
+          width: 52,
           child: Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            style: TextStyle(
+              fontSize: 12,
               color: AppColors.textMuted,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'monospace',
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: TextStyle(
+              fontSize: 12.5,
               color: AppColors.textSecondary,
-              height: 1.45,
+              height: 1.4,
             ),
           ),
         ),
@@ -764,6 +806,34 @@ class _FocusRow extends StatelessWidget {
   }
 }
 
+class _DomainChip extends StatelessWidget {
+  const _DomainChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Cycling subtext ────────────────────────────────────────────────────────────
 class _CyclingSubtext extends StatefulWidget {
   const _CyclingSubtext();
 
@@ -772,23 +842,21 @@ class _CyclingSubtext extends StatefulWidget {
 }
 
 class _CyclingSubtextState extends State<_CyclingSubtext> {
-  static const List<String> _titles = [
+  static const _titles = [
     'Computer Vision Engineer',
     'Deep Learning Builder',
     'ROS / Robotics Developer',
     'Inference API Developer',
   ];
 
-  int _currentIndex = 0;
+  int _i = 0;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 2100), (_) {
-      if (mounted) {
-        setState(() => _currentIndex = (_currentIndex + 1) % _titles.length);
-      }
+    _timer = Timer.periodic(const Duration(milliseconds: 2200), (_) {
+      if (mounted) setState(() => _i = (_i + 1) % _titles.length);
     });
   }
 
@@ -800,150 +868,26 @@ class _CyclingSubtextState extends State<_CyclingSubtext> {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.titleMedium?.copyWith(
-      fontSize: 18,
-      color: AppColors.accent,
-      fontWeight: FontWeight.w600,
-    );
-
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 420),
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.14),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: Text(
-        _titles[_currentIndex],
-        key: ValueKey(_currentIndex),
-        style: style,
+      duration: const Duration(milliseconds: 380),
+      transitionBuilder: (child, anim) => FadeTransition(
+        opacity: anim,
+        child: SlideTransition(
+          position: Tween(
+            begin: const Offset(0, 0.12),
+            end: Offset.zero,
+          ).animate(anim),
+          child: child,
+        ),
       ),
-    );
-  }
-}
-
-class _AnimatedCTAButton extends StatefulWidget {
-  const _AnimatedCTAButton({
-    required this.label,
-    required this.onPressed,
-    required this.icon,
-    this.isPrimary = false,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final IconData icon;
-  final bool isPrimary;
-
-  @override
-  State<_AnimatedCTAButton> createState() => _AnimatedCTAButtonState();
-}
-
-class _AnimatedCTAButtonState extends State<_AnimatedCTAButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _hoverController;
-  bool _isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _hoverController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 180),
-    );
-  }
-
-  @override
-  void dispose() {
-    _hoverController.dispose();
-    super.dispose();
-  }
-
-  void _handleHover(bool hovering) {
-    setState(() => _isHovered = hovering);
-    if (hovering) {
-      _hoverController.forward();
-    } else {
-      _hoverController.reverse();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isPrimary = widget.isPrimary;
-
-    return MouseRegion(
-      onEnter: (_) => _handleHover(true),
-      onExit: (_) => _handleHover(false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedBuilder(
-          animation: _hoverController,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, -4 * _hoverController.value),
-              child: child,
-            );
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              gradient: isPrimary ? AppColors.accentGradient : null,
-              color: isPrimary
-                  ? null
-                  : (_isHovered
-                        ? AppColors.surface
-                        : AppColors.background.withValues(alpha: 0.20)),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isPrimary ? Colors.transparent : AppColors.borderStrong,
-              ),
-              boxShadow: _isHovered
-                  ? [
-                      BoxShadow(
-                        color:
-                            (isPrimary
-                                    ? AppColors.accent
-                                    : AppColors.accentSoft)
-                                .withValues(alpha: 0.18),
-                        blurRadius: 22,
-                        offset: const Offset(0, 12),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  widget.icon,
-                  size: 18,
-                  color: isPrimary
-                      ? AppColors.background
-                      : AppColors.textPrimary,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isPrimary
-                        ? AppColors.background
-                        : AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      child: Text(
+        _titles[_i],
+        key: ValueKey(_i),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.accent,
+          letterSpacing: 0.1,
         ),
       ),
     );

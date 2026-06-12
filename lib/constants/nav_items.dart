@@ -8,3 +8,5 @@ final List<IconData> navIcons = [
   Icons.work_outline_rounded,
   Icons.mail_outline_rounded,
 ];
+
+const String blogUrl = 'https://chinmaybansal.hashnode.dev';

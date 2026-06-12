@@ -6,12 +6,25 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:portfolio/constants/skill_items.dart';
 
+// One accent per category — gives each panel its own identity
+const _categoryAccents = {
+  'Programming Languages': Color(0xFF6C63FF),
+  'Artificial Intelligence': Color(0xFF06B6D4),
+  'Computer Vision': Color(0xFFF472B6),
+  'Frontend Engineering': Color(0xFF34D399),
+  'Backend & Databases': Color(0xFFFBBF24),
+  'Robotics & Autonomous Systems': Color(0xFFA78BFA),
+  'Developer Tools & DevOps': Color(0xFFFF8C69),
+};
+
 const List<String> _primaryCategories = [
   'Programming Languages',
   'Artificial Intelligence',
   'Computer Vision',
   'Frontend Engineering',
   'Backend & Databases',
+  'Robotics & Autonomous Systems',
+  'Developer Tools & DevOps',
 ];
 
 class SkillSection extends StatelessWidget {
@@ -24,25 +37,22 @@ class SkillSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isCompact = width < 860;
+    final isCompact = MediaQuery.of(context).size.width < 860;
 
     return Container(
       key: navbarKey,
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 20 : 32,
-        vertical: isCompact ? 28 : 36,
+        horizontal: isCompact ? 24 : 64,
+        vertical: isCompact ? 56 : 80,
       ),
       alignment: Alignment.center,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1280),
+        constraints: const BoxConstraints(maxWidth: 1240),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SectionHeader(totalSkills: _totalSkills),
-            const SizedBox(height: 18),
-            const _SkillSignalRow(),
-            const SizedBox(height: 20),
+            _SectionHeader(totalSkills: _totalSkills, isCompact: isCompact),
+            SizedBox(height: isCompact ? 40 : 56),
             _SkillBoard(isCompact: isCompact),
           ],
         ),
@@ -51,166 +61,178 @@ class SkillSection extends StatelessWidget {
   }
 }
 
+// ── Header ───────────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.totalSkills});
+  const _SectionHeader({required this.totalSkills, required this.isCompact});
 
   final int totalSkills;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.of(context).size.width < 860;
-
-    final heading = Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.84),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.borderStrong),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.psychology_alt_rounded,
-                size: 16,
+        // Eyebrow — same pattern as Projects for consistency
+        Row(
+          children: [
+            Container(
+              width: 32,
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: AppColors.accentGradientStrong,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'CAPABILITIES',
+              style: TextStyle(
                 color: AppColors.accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2.5,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'AI STACK',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          skillSectionTitle,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            height: 1.08,
-            letterSpacing: -0.8,
-          ),
-        ),
-        const SizedBox(height: 12),
+            ),
+          ],
+        )
+            .animate()
+            .fadeIn(duration: 500.ms)
+            .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
+
+        SizedBox(height: isCompact ? 20 : 24),
+
+        // Headline with inline skill count as a typographic accent
+        isCompact
+            ? _CompactHeadline(totalSkills: totalSkills)
+            : _DesktopHeadline(totalSkills: totalSkills),
+
+        SizedBox(height: isCompact ? 16 : 20),
+
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Text(
             skillSectionDescription,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            style: TextStyle(
               color: AppColors.textSecondary,
+              fontSize: isCompact ? 14.5 : 16,
               height: 1.65,
             ),
           ),
-        ),
-      ],
-    );
+        )
+            .animate()
+            .fadeIn(duration: 500.ms, delay: 160.ms),
 
-    final statsCard = Container(
-      width: isCompact ? double.infinity : 250,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.surfaceGlass, AppColors.backgroundElevated],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderStrong),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$totalSkills',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppColors.accent,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'active skills',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Organized as one tech stack with a balanced desktop layout.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textMuted,
-              height: 1.55,
-            ),
-          ),
-        ],
-      ),
-    );
+        SizedBox(height: isCompact ? 20 : 28),
 
-    if (isCompact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [heading, const SizedBox(height: 16), statsCard],
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: heading),
-        const SizedBox(width: 24),
-        statsCard,
+        // Category count row — data at a glance, no card needed
+        _CategoryCountRow()
+            .animate()
+            .fadeIn(duration: 500.ms, delay: 220.ms),
       ],
     );
   }
 }
 
-class _SkillSignalRow extends StatelessWidget {
-  const _SkillSignalRow();
+class _DesktopHeadline extends StatelessWidget {
+  const _DesktopHeadline({required this.totalSkills});
+  final int totalSkills;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      ('Computer Vision', 'real-time perception'),
-      ('Deep Learning', 'training + inference'),
-      ('ROS', 'robot stacks + control flows'),
-      ('Apps', 'product-ready delivery'),
-    ];
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          fontSize: 56,
+          fontWeight: FontWeight.w900,
+          height: 1.0,
+          letterSpacing: -2.0,
+          color: AppColors.textPrimary,
+        ),
+        children: [
+          const TextSpan(text: 'What I\nwork with'),
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 600.ms, delay: 80.ms)
+        .slideY(begin: 0.07, end: 0, curve: Curves.easeOutCubic);
+  }
+}
+
+class _CompactHeadline extends StatelessWidget {
+  const _CompactHeadline({required this.totalSkills});
+  final int totalSkills;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'What I\nwork with',
+      style: const TextStyle(
+        fontSize: 40,
+        fontWeight: FontWeight.w900,
+        height: 1.0,
+        letterSpacing: -1.5,
+        color: AppColors.textPrimary,
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 600.ms, delay: 80.ms)
+        .slideY(begin: 0.07, end: 0, curve: Curves.easeOutCubic);
+  }
+}
+
+// Replaces the stats card — inline data, zero visual clutter
+class _CategoryCountRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final entries = _primaryCategories.map((cat) {
+      final count = categorizedSkills[cat]?.length ?? 0;
+      final accent = _categoryAccents[cat] ?? AppColors.accent;
+      return (cat.split(' ').first, count, accent);
+    }).toList();
 
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: items.map((item) {
+      spacing: 8,
+      runSpacing: 8,
+      children: entries.map((entry) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
+            color: entry.$3.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: entry.$3.withValues(alpha: 0.2),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                item.$1,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: entry.$3,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(width: 7),
               Text(
-                item.$2,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                entry.$1,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${entry.$2}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: entry.$3,
+                ),
               ),
             ],
           ),
@@ -220,60 +242,38 @@ class _SkillSignalRow extends StatelessWidget {
   }
 }
 
+// ── Board ────────────────────────────────────────────────────────────────────
 class _SkillBoard extends StatelessWidget {
   const _SkillBoard({required this.isCompact});
-
   final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    if (width >= 1120) {
-      return const _DesktopSkillBoard();
-    }
+    if (width >= 1120) return const _DesktopSkillBoard();
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final categories = [
-          ..._primaryCategories,
-          'Robotics & Autonomous Systems',
-          'Developer Tools & DevOps',
-        ];
-        final columns = constraints.maxWidth >= 1180
-            ? 3
-            : constraints.maxWidth >= 760
-            ? 2
-            : 1;
-        const spacing = 18.0;
-        final itemWidth = columns == 1
+        final cols = constraints.maxWidth >= 760 ? 2 : 1;
+        const spacing = 16.0;
+        final itemW = cols == 1
             ? constraints.maxWidth
-            : (constraints.maxWidth - spacing) / columns;
+            : (constraints.maxWidth - spacing) / 2;
 
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: categories.asMap().entries.map((entry) {
-            final index = entry.key;
-            final category = entry.value;
-            final meta = skillCategoryMeta[category]!;
-            final skills = categorizedSkills[category]!;
-
+          children: _primaryCategories.asMap().entries.map((e) {
+            final cat = e.value;
             return SizedBox(
-              width: itemWidth,
-              child:
-                  _PrimarySkillPanel(
-                        title: category,
-                        summary: meta.summary,
-                        icon: meta.icon,
-                        skills: skills,
-                      )
-                      .animate()
-                      .fadeIn(
-                        duration: 700.ms,
-                        delay: (index * 80).ms,
-                        curve: Curves.easeOutCubic,
-                      )
-                      .slideY(begin: 0.06, end: 0),
+              width: itemW,
+              child: _SkillPanel(
+                category: cat,
+                accent: _categoryAccents[cat] ?? AppColors.accent,
+              )
+                  .animate()
+                  .fadeIn(duration: 600.ms, delay: (e.key * 80).ms)
+                  .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
             );
           }).toList(),
         );
@@ -285,337 +285,376 @@ class _SkillBoard extends StatelessWidget {
 class _DesktopSkillBoard extends StatelessWidget {
   const _DesktopSkillBoard();
 
+  Widget _panel(String cat, int idx) {
+    return _SkillPanel(
+      category: cat,
+      accent: _categoryAccents[cat] ?? AppColors.accent,
+    )
+        .animate()
+        .fadeIn(duration: 600.ms, delay: (idx * 70).ms)
+        .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic);
+  }
+
   @override
   Widget build(BuildContext context) {
-    const spacing = 18.0;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final itemWidth = (constraints.maxWidth - (spacing * 2)) / 3;
-
-        return Column(
+    const s = 16.0;
+    return Column(
+      children: [
+        // Row 1: 3 columns
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _panel('Programming Languages', 0)),
+              const SizedBox(width: s),
+              Expanded(child: _panel('Artificial Intelligence', 1)),
+              const SizedBox(width: s),
+              Expanded(child: _panel('Computer Vision', 2)),
+            ],
+          ),
+        ),
+        const SizedBox(height: s),
+        // Row 2: 3 columns, last column stacked 2 smaller panels
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _AnimatedSkillPanel(
-                    index: 0,
-                    child: _buildPrimaryPanel('Programming Languages'),
-                  ),
-                ),
-                const SizedBox(width: spacing),
-                Expanded(
-                  child: _AnimatedSkillPanel(
-                    index: 1,
-                    child: _buildPrimaryPanel('Artificial Intelligence'),
-                  ),
-                ),
-                const SizedBox(width: spacing),
-                Expanded(
-                  child: _AnimatedSkillPanel(
-                    index: 2,
-                    child: _buildPrimaryPanel('Computer Vision'),
-                  ),
-                ),
-              ],
+            Expanded(child: _panel('Frontend Engineering', 3)),
+            const SizedBox(width: s),
+            Expanded(child: _panel('Backend & Databases', 4)),
+            const SizedBox(width: s),
+            Expanded(
+              child: Column(
+                children: [
+                  _panel('Robotics & Autonomous Systems', 5),
+                  const SizedBox(height: s),
+                  _panel('Developer Tools & DevOps', 6),
+                ],
+              ),
             ),
-            const SizedBox(height: spacing),
-            Row(
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Skill Panel ───────────────────────────────────────────────────────────────
+class _SkillPanel extends StatefulWidget {
+  const _SkillPanel({required this.category, required this.accent});
+
+  final String category;
+  final Color accent;
+
+  @override
+  State<_SkillPanel> createState() => _SkillPanelState();
+}
+
+class _SkillPanelState extends State<_SkillPanel> {
+  bool _hovered = false;
+  Offset _mouse = const Offset(0.5, 0.5);
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = skillCategoryMeta[widget.category]!;
+    final skills = categorizedSkills[widget.category]!;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() {
+        _hovered = false;
+        _mouse = const Offset(0.5, 0.5);
+      }),
+      onHover: (e) {
+        final box = context.findRenderObject() as RenderBox;
+        final local = box.globalToLocal(e.position);
+        setState(() {
+          _mouse = Offset(
+            local.dx / box.size.width,
+            local.dy / box.size.height,
+          );
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _hovered ? -5 : 0, 0),
+        padding: const EdgeInsets.all(24),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceGlass,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: _hovered
+                ? widget.accent.withValues(alpha: 0.4)
+                : AppColors.borderStrong.withValues(alpha: 0.4),
+            width: 1.5,
+          ),
+          boxShadow: _hovered
+              ? [
+            BoxShadow(
+              color: widget.accent.withValues(alpha: 0.12),
+              blurRadius: 32,
+              offset: const Offset(0, 16),
+            ),
+          ]
+              : [],
+        ),
+        child: Stack(
+          children: [
+            // Mouse-follow spotlight
+            if (_hovered)
+              Positioned(
+                left: _mouse.dx * 200 - 100,
+                top: _mouse.dy * 200 - 100,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          widget.accent.withValues(alpha: 0.06),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _AnimatedSkillPanel(
-                    index: 3,
-                    child: _buildPrimaryPanel('Frontend Engineering'),
-                  ),
-                ),
-                const SizedBox(width: spacing),
-                Expanded(
-                  child: _AnimatedSkillPanel(
-                    index: 4,
-                    child: _buildPrimaryPanel('Backend & Databases'),
-                  ),
-                ),
-                const SizedBox(width: spacing),
-                SizedBox(
-                  width: itemWidth,
-                  child: Column(
-                    children: [
-                      _AnimatedSkillPanel(
-                        index: 5,
-                        child: _buildPrimaryPanelWithValues(
-                          title: 'Robotics & Autonomous Systems',
-                          summary:
-                              skillCategoryMeta['Robotics & Autonomous Systems']!
-                                  .summary,
-                          icon:
-                              skillCategoryMeta['Robotics & Autonomous Systems']!
-                                  .icon,
-                          skills:
-                              categorizedSkills['Robotics & Autonomous Systems']!,
+                // Header: accent dot + title
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Accent-colored icon square
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: widget.accent.withValues(alpha: _hovered ? 0.18 : 0.10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: widget.accent.withValues(alpha: _hovered ? 0.4 : 0.2),
                         ),
                       ),
-                      const SizedBox(height: spacing),
-                      _AnimatedSkillPanel(
-                        index: 6,
-                        child: _buildPrimaryPanelWithValues(
-                          title: 'Developer Tools & DevOps',
-                          summary:
-                              skillCategoryMeta['Developer Tools & DevOps']!
-                                  .summary,
-                          icon: skillCategoryMeta['Developer Tools & DevOps']!
-                              .icon,
-                          skills:
-                              categorizedSkills['Developer Tools & DevOps']!,
-                        ),
+                      child: Icon(
+                        meta.icon,
+                        color: widget.accent,
+                        size: 20,
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.category,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${skills.length} tools',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: widget.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Accent rule — signals this panel's color identity
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.accent.withValues(alpha: _hovered ? 0.6 : 0.2),
+                        Colors.transparent,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(1),
                   ),
+                ),
+
+                const SizedBox(height: 14),
+
+                Text(
+                  meta.summary,
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                    height: 1.58,
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // Skills
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: skills.map((skill) {
+                    return SkillChip(
+                      label: skill['title']!,
+                      iconPath: skill['img'],
+                      iconKey: skill['icon'],
+                      accent: widget.accent,
+                      parentHovered: _hovered,
+                    );
+                  }).toList(),
                 ),
               ],
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _buildPrimaryPanel(String category) {
-    final meta = skillCategoryMeta[category]!;
-    return _buildPrimaryPanelWithValues(
-      title: category,
-      summary: meta.summary,
-      icon: meta.icon,
-      skills: categorizedSkills[category]!,
-    );
-  }
-
-  Widget _buildPrimaryPanelWithValues({
-    required String title,
-    required String summary,
-    required IconData icon,
-    required List<Map<String, String>> skills,
-  }) {
-    return _PrimarySkillPanel(
-      title: title,
-      summary: summary,
-      icon: icon,
-      skills: skills,
-    );
-  }
-}
-
-class _AnimatedSkillPanel extends StatelessWidget {
-  const _AnimatedSkillPanel({required this.index, required this.child});
-
-  final int index;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return child
-        .animate()
-        .fadeIn(
-          duration: 700.ms,
-          delay: (index * 80).ms,
-          curve: Curves.easeOutCubic,
-        )
-        .slideY(begin: 0.06, end: 0);
-  }
-}
-
-class _PrimarySkillPanel extends StatefulWidget {
-  const _PrimarySkillPanel({
-    required this.title,
-    required this.summary,
-    required this.icon,
-    required this.skills,
-  });
-
-  final String title;
-  final String summary;
-  final IconData icon;
-  final List<Map<String, String>> skills;
-
-  @override
-  State<_PrimarySkillPanel> createState() => _PrimarySkillPanelState();
-}
-
-class _PrimarySkillPanelState extends State<_PrimarySkillPanel> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: Transform.translate(
-        offset: Offset(0, _isHovered ? -6 : 0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(22),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.surfaceGlass, AppColors.backgroundElevated],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: _isHovered ? AppColors.accentSoft : AppColors.borderStrong,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (_isHovered ? AppColors.accentSoft : Colors.black)
-                    .withValues(alpha: _isHovered ? 0.12 : 0.16),
-                blurRadius: _isHovered ? 24 : 18,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _PanelBeamPainter(
-                      glowX: 90,
-                      intensity: _isHovered ? 1.0 : 0.35,
-                    ),
-                  ),
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.accentGradientStrong,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.accent.withValues(alpha: 0.22),
-                              blurRadius: 16,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          widget.icon,
-                          color: AppColors.background,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.title,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.15,
-                                  ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              '${widget.skills.length} items',
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    color: AppColors.accent,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.summary,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textMuted,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: widget.skills.map((skill) {
-                      return SkillCard(
-                        iconPath: skill['img'],
-                        iconKey: skill['icon'],
-                        label: skill['title']!,
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );
   }
 }
 
-class _PanelBeamPainter extends CustomPainter {
-  const _PanelBeamPainter({required this.glowX, required this.intensity});
+// ── Skill chip — flat, readable, accent on hover ──────────────────────────
+class SkillChip extends StatefulWidget {
+  const SkillChip({
+    super.key,
+    required this.label,
+    required this.accent,
+    required this.parentHovered,
+    this.iconPath,
+    this.iconKey,
+  });
 
-  final double glowX;
-  final double intensity;
+  final String label;
+  final String? iconPath;
+  final String? iconKey;
+  final Color accent;
+  final bool parentHovered;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final glowRect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final glowPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          AppColors.accent.withValues(alpha: 0.02 * intensity),
-          AppColors.accentSoft.withValues(alpha: 0.10 * intensity),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.25, 1.0],
-      ).createShader(glowRect);
+  State<SkillChip> createState() => _SkillChipState();
+}
 
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(glowRect, const Radius.circular(28)),
-      glowPaint,
+class _SkillChipState extends State<SkillChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: _hovered
+              ? widget.accent.withValues(alpha: 0.1)
+              : AppColors.background.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _hovered
+                ? widget.accent.withValues(alpha: 0.35)
+                : AppColors.border.withValues(alpha: 0.6),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SkillIcon(
+              iconPath: widget.iconPath,
+              iconKey: widget.iconKey,
+              label: widget.label,
+              accent: widget.accent,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _hovered ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-
-    final linePaint = Paint()
-      ..color = AppColors.accentSoft.withValues(alpha: 0.10 * intensity)
-      ..strokeWidth = 1;
-
-    for (double y = 22; y < size.height; y += 26) {
-      canvas.drawLine(
-        Offset(max(0, glowX - 42), y),
-        Offset(min(size.width, glowX + 42), y),
-        linePaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PanelBeamPainter oldDelegate) {
-    return oldDelegate.glowX != glowX || oldDelegate.intensity != intensity;
   }
 }
 
-class SkillCard extends StatefulWidget {
+class _SkillIcon extends StatelessWidget {
+  const _SkillIcon({
+    required this.label,
+    required this.accent,
+    required this.size,
+    this.iconPath,
+    this.iconKey,
+  });
+
+  final String label;
+  final String? iconPath;
+  final String? iconKey;
+  final Color accent;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (iconPath != null) {
+      return SvgPicture.asset(
+        iconPath!,
+        width: size,
+        height: size,
+        semanticsLabel: label,
+      );
+    }
+    return Icon(
+      _iconFor(iconKey),
+      size: size,
+      color: accent,
+    );
+  }
+
+  IconData _iconFor(String? key) {
+    return switch (key) {
+      'camera'        => Icons.camera_alt_rounded,
+      'image_search'  => Icons.image_search_rounded,
+      'center_focus'  => Icons.center_focus_strong_rounded,
+      'gesture'       => Icons.back_hand_rounded,
+      'view_in_ar'    => Icons.view_in_ar_rounded,
+      'schema'        => Icons.account_tree_rounded,
+      'query_stats'   => Icons.query_stats_rounded,
+      'article'       => Icons.article_outlined,
+      'smart_toy'     => Icons.smart_toy_rounded,
+      'repeat'        => Icons.repeat_rounded,
+      'schedule_send' => Icons.schedule_send_rounded,
+      'phone_android' => Icons.phone_android_rounded,
+      'dns'           => Icons.dns_rounded,
+      'sync'          => Icons.sync_rounded,
+      _               => Icons.auto_awesome_rounded,
+    };
+  }
+}
+
+// Keep SkillCard exported for backward compat if used elsewhere
+class SkillCard extends StatelessWidget {
   const SkillCard({
     super.key,
     required this.label,
@@ -628,133 +667,13 @@ class SkillCard extends StatefulWidget {
   final String? iconKey;
 
   @override
-  State<SkillCard> createState() => _SkillCardState();
-}
-
-class _SkillCardState extends State<SkillCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.of(context).size.width < 520;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: Transform.translate(
-        offset: Offset(0, _isHovered ? -4 : 0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 12 : 14,
-            vertical: isCompact ? 12 : 14,
-          ),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? AppColors.surfaceAlt
-                : AppColors.background.withValues(alpha: 0.38),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: _isHovered ? AppColors.accentSoft : AppColors.border,
-            ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: AppColors.accentSoft.withValues(alpha: 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 10),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SkillBadgeVisual(
-                iconPath: widget.iconPath,
-                iconKey: widget.iconKey,
-                label: widget.label,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                widget.label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return SkillChip(
+      label: label,
+      iconPath: iconPath,
+      iconKey: iconKey,
+      accent: AppColors.accent,
+      parentHovered: false,
     );
-  }
-}
-
-class _SkillBadgeVisual extends StatelessWidget {
-  const _SkillBadgeVisual({required this.label, this.iconPath, this.iconKey});
-
-  final String label;
-  final String? iconPath;
-  final String? iconKey;
-
-  @override
-  Widget build(BuildContext context) {
-    const boxSize = 40.0;
-    const padding = 8.0;
-    const iconSize = 20.0;
-
-    return Container(
-      height: boxSize,
-      width: boxSize,
-      padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: iconPath != null
-          ? SvgPicture.asset(iconPath!, semanticsLabel: 'Skill icon for $label')
-          : Icon(
-              _materialIconFor(iconKey),
-              size: iconSize,
-              color: AppColors.accent,
-            ),
-    );
-  }
-
-  IconData _materialIconFor(String? key) {
-    switch (key) {
-      case 'camera':
-        return Icons.camera_alt_rounded;
-      case 'image_search':
-        return Icons.image_search_rounded;
-      case 'center_focus':
-        return Icons.center_focus_strong_rounded;
-      case 'gesture':
-        return Icons.back_hand_rounded;
-      case 'view_in_ar':
-        return Icons.view_in_ar_rounded;
-      case 'schema':
-        return Icons.account_tree_rounded;
-      case 'query_stats':
-        return Icons.query_stats_rounded;
-      case 'article':
-        return Icons.article_outlined;
-      case 'smart_toy':
-        return Icons.smart_toy_rounded;
-      case 'repeat':
-        return Icons.repeat_rounded;
-      case 'schedule_send':
-        return Icons.schedule_send_rounded;
-      case 'phone_android':
-        return Icons.phone_android_rounded;
-      case 'dns':
-        return Icons.dns_rounded;
-      case 'sync':
-        return Icons.sync_rounded;
-      default:
-        return Icons.auto_awesome_rounded;
-    }
   }
 }

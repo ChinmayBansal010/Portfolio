@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/constants/colors.dart';
+import 'package:portfolio/constants/nav_items.dart';
 import 'package:portfolio/widgets/site_logo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HeaderMobile extends StatelessWidget {
   const HeaderMobile({super.key, this.onLogoTap, this.onMenuTap});
@@ -30,32 +32,35 @@ class HeaderMobile extends StatelessWidget {
         children: [
           SiteLogo(onTap: onLogoTap),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.background.withValues(alpha: 0.28),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.psychology_alt_rounded,
-                  color: AppColors.accent,
-                  size: 16,
-                ),
-                SizedBox(width: 6),
-                Text(
-                  'AI',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    fontFamily: 'SpaceGrotesk',
+          GestureDetector(
+            onTap: () => launchUrl(Uri.parse(blogUrl)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.background.withValues(alpha: 0.28),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.auto_stories_rounded,
+                    color: AppColors.accent,
+                    size: 16,
                   ),
-                ),
-              ],
+                  SizedBox(width: 6),
+                  Text(
+                    'BLOG',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      fontFamily: 'SpaceGrotesk',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 10),

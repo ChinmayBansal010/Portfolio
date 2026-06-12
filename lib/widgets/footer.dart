@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -7,56 +8,55 @@ class Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.of(context).size.width < 720;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.3))),
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _SocialIcon(icon: Icons.code_rounded, url: "https://github.com/ChinmayBansal010"),
-              const SizedBox(width: 20),
-              _SocialIcon(icon: Icons.work_outline_rounded, url: "https://linkedin.com/in/xenoryx"),
-              const SizedBox(width: 20),
-              _SocialIcon(icon: Icons.mail_outline_rounded, url: "mailto:chinmay8521@gmail.com"),
-            ],
+        border: Border(
+          top: BorderSide(
+            color: AppColors.borderStrong.withValues(alpha: 0.25),
           ),
-          const SizedBox(height: 32),
-          const Text(
-            'DESIGNED & ENGINEERED BY CHINMAY BANSAL',
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'SpaceGrotesk',
-              fontWeight: FontWeight.w800,
-              color: AppColors.textSecondary,
-              letterSpacing: 2.0,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            bottom: -60,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 500,
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.accent.withValues(alpha: 0.06),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          const _GitHubButton(),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _FooterBadge(label: "FLUTTER 3.29"),
-              const SizedBox(width: 12),
-              _FooterBadge(label: "DART 3.7"),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            '© ${DateTime.now().year} — All rights reserved',
-            style: const TextStyle(
-              fontSize: 11,
-              fontFamily: 'SpaceGrotesk',
-              color: AppColors.textMuted,
-              letterSpacing: 0.5,
+
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 24 : 44,
+              vertical: isCompact ? 16 : 30,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1240),
+                child: Column(
+                  children: [
+                    isCompact
+                        ? _BottomRowCompact()
+                        : _BottomRowDesktop(),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -65,69 +65,124 @@ class Footer extends StatelessWidget {
   }
 }
 
-class _SocialIcon extends StatefulWidget {
-  const _SocialIcon({required this.icon, required this.url});
-  final IconData icon;
-  final String url;
-
-  @override
-  State<_SocialIcon> createState() => _SocialIconState();
-}
-
-class _SocialIconState extends State<_SocialIcon> {
-  bool _isHovered = false;
+// ── Bottom row — desktop ────────────────────────────────────────────────────
+class _BottomRowDesktop extends StatelessWidget {
+  const _BottomRowDesktop();
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: IconButton(
-        onPressed: () => launchUrl(Uri.parse(widget.url)),
-        icon: Icon(
-          widget.icon,
-          color: _isHovered ? AppColors.accent : AppColors.textSecondary,
-          size: 24,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Chinmay Bansal',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  'Built with ',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                _TechBadge(label: 'Flutter'),
+                const SizedBox(width: 6),
+                _TechBadge(label: 'Dart'),
+              ],
+            ),
+          ],
         ),
-      ),
+
+        _ViewSourceButton(),
+
+        Text(
+          '© ${DateTime.now().year}',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textMuted,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _FooterBadge extends StatelessWidget {
-  const _FooterBadge({required this.label});
-  final String label;
+// ── Bottom row — compact ────────────────────────────────────────────────────
+class _BottomRowCompact extends StatelessWidget {
+  const _BottomRowCompact();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textMuted,
-          fontFamily: 'monospace',
+    return Column(
+      children: [
+        _ViewSourceButton(),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Chinmay Bansal',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      'Built with ',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    _TechBadge(label: 'Flutter'),
+                    const SizedBox(width: 6),
+                    _TechBadge(label: 'Dart'),
+                  ],
+                ),
+              ],
+            ),
+            Text(
+              '© ${DateTime.now().year}',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
         ),
-      ),
+      ],
     );
   }
 }
 
-class _GitHubButton extends StatefulWidget {
-  const _GitHubButton();
+class _ViewSourceButton extends StatefulWidget {
+  const _ViewSourceButton();
 
   @override
-  State<_GitHubButton> createState() => _GitHubButtonState();
+  State<_ViewSourceButton> createState() => _ViewSourceButtonState();
 }
 
-class _GitHubButtonState extends State<_GitHubButton> {
+class _ViewSourceButtonState extends State<_ViewSourceButton> {
   bool _isHovered = false;
 
   @override
@@ -137,54 +192,75 @@ class _GitHubButtonState extends State<_GitHubButton> {
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () async {
-          final url = Uri.parse(
-            'https://github.com/ChinmayBansal010/Portfolio',
-          );
-          if (await canLaunchUrl(url)) {
-            await launchUrl(url, mode: LaunchMode.externalApplication);
-          }
-        },
-        child: Transform.translate(
-          offset: Offset(0, _isHovered ? -3 : 0),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
+        onTap: () => launchUrl(
+          Uri.parse('https://github.com/ChinmayBansal010/Portfolio'),
+          mode: LaunchMode.externalApplication,
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? AppColors.surface.withValues(alpha: 0.7)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
               color: _isHovered
-                  ? AppColors.surface
-                  : AppColors.background.withValues(alpha: 0.32),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isHovered ? AppColors.accentSoft : AppColors.border,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.code_rounded,
-                  size: 18,
-                  color: _isHovered
-                      ? AppColors.accent
-                      : AppColors.textSecondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'View this portfolio on GitHub',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'SpaceGrotesk',
-                    fontWeight: FontWeight.w600,
-                    color: _isHovered
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
+                  ? AppColors.borderStrong.withValues(alpha: 0.5)
+                  : AppColors.border.withValues(alpha: 0.3),
             ),
           ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.code_rounded,
+                size: 15,
+                color: _isHovered
+                    ? AppColors.accent
+                    : AppColors.textMuted,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                'View source',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: _isHovered
+                      ? AppColors.textSecondary
+                      : AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TechBadge extends StatelessWidget {
+  const _TechBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textMuted,
+          letterSpacing: 0.3,
         ),
       ),
     );

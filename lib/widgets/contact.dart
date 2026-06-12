@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../constants/nav_items.dart';
 
 class GetInTouchSection extends StatelessWidget {
   const GetInTouchSection({super.key, required this.navbarKey});
@@ -10,520 +13,648 @@ class GetInTouchSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.of(context).size.width < 940;
+    final isCompact = MediaQuery.of(context).size.width < 860;
 
     return Container(
       key: navbarKey,
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 20 : 32,
-        vertical: isCompact ? 28 : 36,
+        horizontal: isCompact ? 24 : 64,
+        vertical: isCompact ? 56 : 80,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1280),
-          child: Container(
-            padding: EdgeInsets.all(isCompact ? 22 : 28),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.surfaceGlass, AppColors.backgroundElevated],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: AppColors.borderStrong),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 24,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
-            child: isCompact
-                ? const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _ContactIntro(),
-                      SizedBox(height: 22),
-                      _ContactPrimaryCard(),
-                      SizedBox(height: 16),
-                      _ContactMetaRow(),
-                      SizedBox(height: 16),
-                      _ContactLinkGrid(),
-                    ],
-                  )
-                : const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 4, child: _ContactIntro()),
-                      SizedBox(width: 28),
-                      Expanded(
-                        flex: 5,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ContactPrimaryCard(),
-                            SizedBox(height: 16),
-                            _ContactMetaRow(),
-                            SizedBox(height: 16),
-                            _ContactLinkGrid(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+          constraints: const BoxConstraints(maxWidth: 1240),
+          child: isCompact
+              ? _CompactLayout()
+              : _DesktopLayout(),
         ),
       ),
     );
   }
 }
 
-class _ContactIntro extends StatelessWidget {
-  const _ContactIntro();
+// ── Desktop: left headline + right action panel ─────────────────────────────
+class _DesktopLayout extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 5,
+          child: _LeftColumn(),
+        ),
+        const SizedBox(width: 64),
+        Expanded(
+          flex: 4,
+          child: _RightPanel(),
+        ),
+      ],
+    );
+  }
+}
 
+// ── Mobile: stacked ──────────────────────────────────────────────────────────
+class _CompactLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        _LeftColumn(),
+        const SizedBox(height: 48),
+        _RightPanel(),
+      ],
+    );
+  }
+}
+
+// ── Left: headline, subtext, topic chips ────────────────────────────────────
+class _LeftColumn extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.of(context).size.width < 860;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Availability pill
+        _AvailabilityBadge()
+            .animate()
+            .fadeIn(duration: 500.ms)
+            .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
+
+        SizedBox(height: isCompact ? 20 : 28),
+
+        // Headline
+        Text(
+          'Got an idea?\nLet\'s talk.',
+          style: TextStyle(
+            fontSize: isCompact ? 42 : 60,
+            fontWeight: FontWeight.w900,
+            height: 1.0,
+            letterSpacing: isCompact ? -1.5 : -2.0,
+            color: AppColors.textPrimary,
+          ),
+        )
+            .animate()
+            .fadeIn(duration: 600.ms, delay: 80.ms)
+            .slideY(begin: 0.07, end: 0, curve: Curves.easeOutCubic),
+
+        SizedBox(height: isCompact ? 16 : 20),
+
+        Text(
+          'Open to internships, freelance builds, and research-heavy collaborations — especially in AI, computer vision, and robotics.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: isCompact ? 14.5 : 16,
+            height: 1.68,
+          ),
+        )
+            .animate()
+            .fadeIn(duration: 500.ms, delay: 140.ms),
+
+        SizedBox(height: isCompact ? 28 : 36),
+
+        // Topic chips — what you care about
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: const [
+            _TopicChip(label: 'AI systems'),
+            _TopicChip(label: 'CV pipelines'),
+            _TopicChip(label: 'ROS / robotics'),
+            _TopicChip(label: 'ML products'),
+          ],
+        )
+            .animate()
+            .fadeIn(duration: 500.ms, delay: 200.ms),
+
+        // Response time note — quiet, below chips
+        SizedBox(height: isCompact ? 20 : 24),
+        Row(
+          children: [
+            Icon(
+              Icons.schedule_rounded,
+              size: 13,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Replies within 24 hours',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        )
+            .animate()
+            .fadeIn(duration: 400.ms, delay: 250.ms),
+      ],
+    );
+  }
+}
+
+// ── Right: email card + social links ────────────────────────────────────────
+class _RightPanel extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _EmailCard()
+            .animate()
+            .fadeIn(duration: 600.ms, delay: 100.ms)
+            .slideY(begin: 0.08, end: 0, curve: Curves.easeOutCubic),
+
+        const SizedBox(height: 16),
+
+        _SocialRow()
+            .animate()
+            .fadeIn(duration: 500.ms, delay: 200.ms),
+      ],
+    );
+  }
+}
+
+// ── Availability badge ───────────────────────────────────────────────────────
+class _AvailabilityBadge extends StatefulWidget {
+  @override
+  State<_AvailabilityBadge> createState() => _AvailabilityBadgeState();
+}
+
+class _AvailabilityBadgeState extends State<_AvailabilityBadge>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFF16A34A).withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _pulse,
+            builder: (_, __) => Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color.lerp(
+                  const Color(0xFF22C55E),
+                  const Color(0xFF16A34A),
+                  _pulse.value,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF22C55E)
+                        .withValues(alpha: 0.5 * (1 - _pulse.value)),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Available for work',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF22C55E),
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Topic chips ──────────────────────────────────────────────────────────────
+class _TopicChip extends StatelessWidget {
+  const _TopicChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.borderStrong.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+          letterSpacing: 0.1,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Email card — the dominant action ────────────────────────────────────────
+class _EmailCard extends StatefulWidget {
+  @override
+  State<_EmailCard> createState() => _EmailCardState();
+}
+
+class _EmailCardState extends State<_EmailCard> {
+  bool _copied = false;
+
+  Future<void> _copyEmail() async {
+    await Clipboard.setData(
+      const ClipboardData(text: 'chinmay8521@gmail.com'),
+    );
+    setState(() => _copied = true);
+    await Future.delayed(const Duration(milliseconds: 2000));
+    if (mounted) setState(() => _copied = false);
+  }
+
+  Future<void> _sendEmail() async {
+    await launchUrl(
+      Uri.parse('mailto:chinmay8521@gmail.com'),
+      mode: LaunchMode.platformDefault,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.surfaceGlass, AppColors.backgroundElevated],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon + label row
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: AppColors.accentGradientStrong,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.mail_outline_rounded,
+                  color: AppColors.background,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Email',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Best way to reach me',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Email address — large, selectable
+          SelectableText(
+            'chinmay8521@gmail.com',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: -0.2,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Divider
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accent.withValues(alpha: 0.2),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Two action buttons
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  label: 'Send email',
+                  icon: Icons.send_rounded,
+                  isPrimary: true,
+                  onTap: _sendEmail,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionButton(
+                  label: _copied ? 'Copied!' : 'Copy',
+                  icon: _copied
+                      ? Icons.check_rounded
+                      : Icons.copy_outlined,
+                  isPrimary: false,
+                  onTap: _copyEmail,
+                  confirmed: _copied,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatefulWidget {
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.isPrimary,
+    required this.onTap,
+    this.confirmed = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isPrimary;
+  final VoidCallback onTap;
+  final bool confirmed;
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color fg = widget.isPrimary
+        ? AppColors.background
+        : widget.confirmed
+        ? const Color(0xFF22C55E)
+        : AppColors.textPrimary;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.84),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.borderStrong),
+            gradient: widget.isPrimary ? AppColors.accentGradient : null,
+            color: widget.isPrimary
+                ? null
+                : widget.confirmed
+                ? const Color(0xFF16A34A).withValues(alpha: 0.1)
+                : AppColors.surface.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(12),
+            border: widget.isPrimary
+                ? null
+                : Border.all(
+              color: widget.confirmed
+                  ? const Color(0xFF22C55E).withValues(alpha: 0.4)
+                  : AppColors.borderStrong.withValues(alpha: 0.5),
+            ),
+            boxShadow: _hovered && widget.isPrimary
+                ? [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ]
+                : [],
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.mail_outline_rounded,
-                size: 16,
-                color: AppColors.accent,
-              ),
-              const SizedBox(width: 8),
+              Icon(widget.icon, size: 15, color: fg),
+              const SizedBox(width: 7),
               Text(
-                'CONTACT',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textSecondary,
+                widget.label,
+                style: TextStyle(
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
+                  color: fg,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 18),
-        Text(
-          'Let’s talk about AI, computer vision, or ML product work.',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            height: 1.08,
-            letterSpacing: -0.8,
+      ),
+    );
+  }
+}
+
+// ── Social row — GitHub + LinkedIn as quiet secondary links ─────────────────
+class _SocialRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const [
+        Expanded(
+          child: _SocialCard(
+            icon: Icons.code_rounded,
+            platform: 'GitHub',
+            handle: 'ChinmayBansal010',
+            url: 'https://github.com/ChinmayBansal010',
           ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          'Use email if you want to discuss a role, a build, or a research-heavy product idea. LinkedIn and GitHub are here for context.',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.textSecondary,
-            height: 1.65,
+        SizedBox(width: 12),
+        Expanded(
+          child: _SocialCard(
+            icon: Icons.work_outline_rounded,
+            platform: 'LinkedIn',
+            handle: 'bansalchinmay',
+            url: 'https://www.linkedin.com/in/bansalchinmay',
           ),
         ),
-        const SizedBox(height: 22),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: const [
-            _SignalChip(text: 'AI systems'),
-            _SignalChip(text: 'CV pipelines'),
-            _SignalChip(text: 'ROS / robotics'),
-            _SignalChip(text: 'ML product builds'),
-          ],
+        SizedBox(width: 12),
+        Expanded(
+          child: _SocialCard(
+            icon: Icons.auto_stories_rounded,
+            platform: 'Blog',
+            handle: 'hashnode',
+            url: blogUrl,
+          ),
         ),
       ],
     );
   }
 }
 
-class _SignalChip extends StatelessWidget {
-  const _SignalChip({required this.text});
+class _SocialCard extends StatefulWidget {
+  const _SocialCard({
+    required this.icon,
+    required this.platform,
+    required this.handle,
+    required this.url,
+  });
 
-  final String text;
+  final IconData icon;
+  final String platform;
+  final String handle;
+  final String url;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.30),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  State<_SocialCard> createState() => _SocialCardState();
 }
 
-class _ContactPrimaryCard extends StatelessWidget {
-  const _ContactPrimaryCard();
+class _SocialCardState extends State<_SocialCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.surfaceAlt, AppColors.surfaceGlass],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => launchUrl(
+          Uri.parse(widget.url),
+          mode: LaunchMode.externalApplication,
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accentSoft),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  gradient: AppColors.accentGradientStrong,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.email_outlined,
-                  color: AppColors.background,
-                ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? AppColors.surface
+                : AppColors.surface.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _hovered
+                  ? AppColors.accent.withValues(alpha: 0.3)
+                  : AppColors.borderStrong.withValues(alpha: 0.3),
+            ),
+            boxShadow: _hovered
+                ? [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              const SizedBox(width: 14),
+            ]
+                : [],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                widget.icon,
+                size: 16,
+                color: _hovered ? AppColors.accent : AppColors.textMuted,
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Best route',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppColors.accent,
+                      widget.platform,
+                      style: TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
+                        color: _hovered
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
+                        letterSpacing: 0.1,
                       ),
                     ),
-                    const SizedBox(height: 4),
                     Text(
-                      'chinmay8521@gmail.com',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      widget.handle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'For internships, collaborations, and project discussions.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.55,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: const [
-              _PrimaryContactAction(
-                mode: _PrimaryContactMode.email,
-                icon: Icons.send_rounded,
-                label: 'Send Email',
-              ),
-              _PrimaryContactAction(
-                mode: _PrimaryContactMode.copy,
-                icon: Icons.copy_all_rounded,
-                label: 'Copy Email',
+              Icon(
+                Icons.arrow_outward_rounded,
+                size: 13,
+                color: _hovered
+                    ? AppColors.accent
+                    : AppColors.textMuted.withValues(alpha: 0.5),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-enum _PrimaryContactMode { email, copy }
-
-class _PrimaryContactAction extends StatelessWidget {
-  const _PrimaryContactAction({
-    required this.mode,
-    required this.icon,
-    required this.label,
-  });
-
-  final _PrimaryContactMode mode;
-  final IconData icon;
-  final String label;
-
-  Future<void> _handleTap(BuildContext context) async {
-    const email = 'chinmay8521@gmail.com';
-    if (mode == _PrimaryContactMode.copy) {
-      await Clipboard.setData(const ClipboardData(text: email));
-      return;
-    }
-
-    await launchUrl(
-      Uri.parse('mailto:$email'),
-      mode: LaunchMode.platformDefault,
-    );
-    await Clipboard.setData(const ClipboardData(text: email));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isPrimary = mode == _PrimaryContactMode.email;
-    return InkWell(
-      onTap: () => _handleTap(context),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: isPrimary ? AppColors.accentGradient : null,
-          color: isPrimary
-              ? null
-              : AppColors.background.withValues(alpha: 0.34),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isPrimary ? Colors.transparent : AppColors.borderStrong,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isPrimary ? AppColors.background : AppColors.textPrimary,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: isPrimary ? AppColors.background : AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ContactMetaRow extends StatelessWidget {
-  const _ContactMetaRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      children: const [
-        _ContactMetaCard(title: 'Focus', value: 'AI, CV, ROS, backend'),
-        _ContactMetaCard(title: 'Reply style', value: 'direct and technical'),
-        _ContactMetaCard(title: 'Use case', value: 'roles, builds, collabs'),
-      ],
-    );
-  }
-}
-
-class _ContactMetaCard extends StatelessWidget {
-  const _ContactMetaCard({required this.title, required this.value});
-
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ContactLinkGrid extends StatelessWidget {
-  const _ContactLinkGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        _ContactLinkCard(
-          icon: Icons.work_outline_rounded,
-          title: 'LinkedIn',
-          label: 'linkedin.com/in/bansalchinmay',
-          url: 'https://www.linkedin.com/in/bansalchinmay',
-        ),
-        _ContactLinkCard(
-          icon: Icons.code_rounded,
-          title: 'GitHub',
-          label: 'github.com/ChinmayBansal010',
-          url: 'https://github.com/ChinmayBansal010',
-        ),
-      ],
-    );
-  }
-}
-
-class _ContactLinkCard extends StatefulWidget {
-  const _ContactLinkCard({
-    required this.icon,
-    required this.title,
-    required this.label,
-    required this.url,
-  });
-
-  final IconData icon;
-  final String title;
-  final String label;
-  final String url;
-
-  @override
-  State<_ContactLinkCard> createState() => _ContactLinkCardState();
-}
-
-class _ContactLinkCardState extends State<_ContactLinkCard> {
-  bool _isHovered = false;
-
-  Future<void> _handleTap(BuildContext context) async {
-    if (!await launchUrl(
-          Uri.parse(widget.url),
-          mode: LaunchMode.externalApplication,
-        ) &&
-        context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Could not open link.')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final cardWidth = width < 640 ? double.infinity : 260.0;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: () => _handleTap(context),
-        child: Transform.translate(
-          offset: Offset(0, _isHovered ? -5 : 0),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            width: cardWidth,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: _isHovered
-                  ? AppColors.surface
-                  : AppColors.background.withValues(alpha: 0.34),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: _isHovered ? AppColors.accentSoft : AppColors.border,
-              ),
-              boxShadow: _isHovered
-                  ? [
-                      BoxShadow(
-                        color: AppColors.accentSoft.withValues(alpha: 0.16),
-                        blurRadius: 20,
-                        offset: const Offset(0, 12),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 44,
-                  width: 44,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.accentGradientStrong,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(widget.icon, color: AppColors.background),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.title,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.arrow_outward_rounded,
-                            size: 18,
-                            color: AppColors.textMuted,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        widget.label,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

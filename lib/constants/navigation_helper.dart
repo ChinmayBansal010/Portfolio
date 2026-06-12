@@ -13,12 +13,20 @@ class NavigationHelper {
     }
 
     final key = navbarKeys[navIndex];
-    if (key.currentContext != null) {
-      await Scrollable.ensureVisible(
-        key.currentContext!,
-        duration: const Duration(milliseconds: 550),
+    final keyContext = key.currentContext;
+    if (keyContext != null) {
+      final renderBox = keyContext.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero);
+
+      final scrollable = Scrollable.of(keyContext);
+      final currentOffset = scrollable.position.pixels;
+
+      final targetOffset = currentOffset + position.dy - 100.0;
+
+      await scrollable.position.animateTo(
+        targetOffset.clamp(0, scrollable.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 700),
         curve: Curves.easeInOutCubic,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
       );
     }
   }
