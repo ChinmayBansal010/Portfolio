@@ -35,17 +35,16 @@ class MyApp extends StatelessWidget {
           displayColor: AppColors.textPrimary,
         ),
       ),
-      builder: (context, child) {
-        return _AppCursorShell(child: child ?? const SizedBox.shrink());
-      },
+      builder: (context, child) =>
+          _AppCursorShell(child: child ?? const SizedBox.shrink()),
       home: const SplashScreen(),
     );
   }
 }
 
+// ── Custom cursor (unchanged) ─────────────────────────────────────────────────
 class _AppCursorShell extends StatefulWidget {
   const _AppCursorShell({required this.child});
-
   final Widget child;
 
   @override
@@ -64,9 +63,9 @@ class _AppCursorShellState extends State<_AppCursorShell>
     if (kIsWeb) return true;
     return switch (defaultTargetPlatform) {
       TargetPlatform.windows => true,
-      TargetPlatform.macOS => true,
-      TargetPlatform.linux => true,
-      _ => false,
+      TargetPlatform.macOS   => true,
+      TargetPlatform.linux   => true,
+      _                      => false,
     };
   }
 
@@ -76,12 +75,12 @@ class _AppCursorShellState extends State<_AppCursorShell>
     _followController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 16),
-    )..addListener(() {
-      if (!_visible || _trail == _pointer) return;
-      setState(() {
-        _trail = Offset.lerp(_trail, _pointer, 0.18) ?? _pointer;
-      });
-    })
+    )
+      ..addListener(() {
+        if (!_visible || _trail == _pointer) return;
+        setState(
+                () => _trail = Offset.lerp(_trail, _pointer, 0.18) ?? _pointer);
+      })
       ..repeat();
   }
 
@@ -91,25 +90,19 @@ class _AppCursorShellState extends State<_AppCursorShell>
     super.dispose();
   }
 
-  void _updatePointer(PointerEvent event) {
-    setState(() => _pointer = event.position);
-  }
+  void _updatePointer(PointerEvent e) =>
+      setState(() => _pointer = e.position);
 
   @override
   Widget build(BuildContext context) {
-    if (!_enableCustomCursor) {
-      return widget.child;
-    }
-
+    if (!_enableCustomCursor) return widget.child;
     return MouseRegion(
       cursor: SystemMouseCursors.none,
-      onEnter: (event) {
-        setState(() {
-          _visible = true;
-          _pointer = event.position;
-          _trail = event.position;
-        });
-      },
+      onEnter: (e) => setState(() {
+        _visible = true;
+        _pointer = e.position;
+        _trail = e.position;
+      }),
       onHover: _updatePointer,
       onExit: (_) => setState(() => _visible = false),
       child: Listener(
@@ -121,73 +114,73 @@ class _AppCursorShellState extends State<_AppCursorShell>
           fit: StackFit.expand,
           children: [
             widget.child,
-            // Isolate high-frequency cursor repaints from the main widget tree
             RepaintBoundary(
               child: IgnorePointer(
                 child: AnimatedOpacity(
                   opacity: _visible ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 140),
-                  child: Stack(
-                    children: [
-                      // Outer Trail (Glassmorphism + Hardware Translate)
-                      Transform.translate(
-                        offset: Offset(_trail.dx - 22, _trail.dy - 22),
-                        child: AnimatedScale(
-                          scale: _pressed ? 0.75 : 1.0,
-                          duration: const Duration(milliseconds: 120),
-                          curve: Curves.easeOutBack,
-                          child: ClipOval(
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.accentSoft.withValues(alpha: 0.05),
-                                  border: Border.all(
-                                    color: AppColors.accentSoft.withValues(alpha: _pressed ? 0.6 : 0.42),
-                                    width: _pressed ? 2.0 : 1.2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.accentSoft.withValues(alpha: 0.16),
-                                      blurRadius: 16,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
+                  child: Stack(children: [
+                    Transform.translate(
+                      offset: Offset(_trail.dx - 22, _trail.dy - 22),
+                      child: AnimatedScale(
+                        scale: _pressed ? 0.75 : 1.0,
+                        duration: const Duration(milliseconds: 120),
+                        curve: Curves.easeOutBack,
+                        child: ClipOval(
+                          child: BackdropFilter(
+                            filter:
+                            ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.accentSoft
+                                    .withValues(alpha: 0.05),
+                                border: Border.all(
+                                  color: AppColors.accentSoft.withValues(
+                                      alpha: _pressed ? 0.6 : 0.42),
+                                  width: _pressed ? 2.0 : 1.2,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accentSoft
+                                        .withValues(alpha: 0.16),
+                                    blurRadius: 16,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
-                      // Inner Pointer (Core)
-                      Transform.translate(
-                        offset: Offset(_pointer.dx - 7, _pointer.dy - 7),
-                        child: AnimatedScale(
-                          scale: _pressed ? 0.5 : 1.0,
-                          duration: const Duration(milliseconds: 120),
-                          curve: Curves.easeOut,
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppColors.accentGradientStrong,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.accent.withValues(alpha: _pressed ? 0.8 : 0.38),
-                                  blurRadius: _pressed ? 12 : 18,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
+                    ),
+                    Transform.translate(
+                      offset: Offset(_pointer.dx - 7, _pointer.dy - 7),
+                      child: AnimatedScale(
+                        scale: _pressed ? 0.5 : 1.0,
+                        duration: const Duration(milliseconds: 120),
+                        curve: Curves.easeOut,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.accentGradientStrong,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accent.withValues(
+                                    alpha: _pressed ? 0.8 : 0.38),
+                                blurRadius: _pressed ? 12 : 18,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ]),
                 ),
               ),
             ),
@@ -198,6 +191,7 @@ class _AppCursorShellState extends State<_AppCursorShell>
   }
 }
 
+// ── Splash screen ─────────────────────────────────────────────────────────────
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -207,51 +201,49 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _introController;
-  late final AnimationController _orbController;
-  late final AnimationController _progressController;
-  final Duration _homePageTransitionDuration = const Duration(
-    milliseconds: 820,
-  );
+  late final AnimationController _intro;
+  late final AnimationController _orb;
+  late final AnimationController _progress;
+
+  static const _splashDelay      = Duration(milliseconds: 3600);
+  static const _transitionLength = Duration(milliseconds: 900);
 
   @override
   void initState() {
     super.initState();
-    _introController = AnimationController(
+    _intro = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     )..forward();
 
-    _orbController = AnimationController(
+    _orb = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 16),
+      duration: const Duration(seconds: 14),
     )..repeat();
 
-    _progressController = AnimationController(
+    _progress = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 2800),
     )..forward();
 
-    Future.delayed(const Duration(milliseconds: 3550), () {
+    Future.delayed(_splashDelay, () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (_, _, _) => const HomePage(),
-          transitionsBuilder: (_, animation, _, child) {
-            final fade = CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutQuart,
-            );
+          transitionsBuilder: (_, anim, _, child) {
+            final curved = CurvedAnimation(
+                parent: anim, curve: Curves.easeOutQuart);
             return FadeTransition(
-              opacity: fade,
+              opacity: curved,
               child: ScaleTransition(
-                scale: Tween<double>(begin: 1.04, end: 1.0).animate(fade),
+                scale: Tween(begin: 1.04, end: 1.0).animate(curved),
                 child: child,
               ),
             );
           },
-          transitionDuration: _homePageTransitionDuration,
+          transitionDuration: _transitionLength,
         ),
       );
     });
@@ -259,98 +251,101 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _introController.dispose();
-    _orbController.dispose();
-    _progressController.dispose();
+    _intro.dispose();
+    _orb.dispose();
+    _progress.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width >= kMinDesktopWidth;
-    final contentWidth = isWide
-        ? min(size.width * 0.76, 1120.0)
-        : size.width - 40;
+    final isWide =
+        MediaQuery.of(context).size.width >= kMinDesktopWidth;
 
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Static background cache (Gradient + Grid)
-          Positioned.fill(
-            child: RepaintBoundary(
-              child: CustomPaint(
-                painter: const _StaticBackgroundPainter(),
+          // Layer 1 — static dot grid + gradient
+          RepaintBoundary(
+            child: CustomPaint(painter: const _StaticBackgroundPainter()),
+          ),
+
+          // Layer 2 — animated ambient orbs
+          RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: _orb,
+              builder: (_, _) => CustomPaint(
+                painter: _AnimatedOrbPainter(progress: _orb.value),
               ),
             ),
           ),
-          // Dynamic Orb Layer
-          Positioned.fill(
-            child: RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: _orbController,
-                builder: (context, _) {
-                  return CustomPaint(
-                    painter: _AnimatedOrbPainter(
-                      progress: _orbController.value,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+
+          // Layer 3 — very subtle lottie texture behind everything
           Positioned.fill(
             child: IgnorePointer(
               child: Opacity(
-                opacity: 0.14,
+                opacity: 0.10,
                 child: Lottie.asset(
                   'assets/animations/splash_bg.json',
                   fit: BoxFit.cover,
+                  repeat: true,
                 ),
               ),
             ),
           ),
+
+          // Layer 4 — vignette
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
-                  radius: 1.24,
+                  radius: 1.3,
                   colors: [
-                    AppColors.accentSoft.withValues(alpha: 0.12),
+                    AppColors.accentSoft.withValues(alpha: 0.10),
                     Colors.transparent,
-                    AppColors.background,
+                    AppColors.background.withValues(alpha: 0.85),
                   ],
-                  stops: const [0.0, 0.42, 1.0],
+                  stops: const [0.0, 0.4, 1.0],
                 ),
               ),
             ),
           ),
-          Center(
-            child: SizedBox(
-              width: contentWidth,
-              child: FadeTransition(
-                opacity: CurvedAnimation(
-                  parent: _introController,
-                  curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-                ),
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.08),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _introController,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-                  child: _SplashContent(
-                    isWide: isWide,
-                    progress: _progressController,
-                  ),
-                ),
-              ),
-            ),
+
+          // Layer 5 — content
+          isWide
+              ? _WideContent(intro: _intro, progress: _progress)
+              : _NarrowContent(intro: _intro, progress: _progress),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Wide layout ───────────────────────────────────────────────────────────────
+class _WideContent extends StatelessWidget {
+  const _WideContent({required this.intro, required this.progress});
+  final AnimationController intro;
+  final AnimationController progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 72),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left: statement
+          Expanded(
+            flex: 5,
+            child: _LeftStatement(intro: intro, progress: progress),
+          ),
+          const SizedBox(width: 56),
+          // Right: lottie hero + radar + log
+          Expanded(
+            flex: 5,
+            child: _RightVisual(intro: intro, progress: progress),
           ),
         ],
       ),
@@ -358,120 +353,540 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-class _SplashContent extends StatelessWidget {
-  const _SplashContent({required this.isWide, required this.progress});
-
-  final bool isWide;
-  final Animation<double> progress;
+// ── Narrow layout ─────────────────────────────────────────────────────────────
+class _NarrowContent extends StatelessWidget {
+  const _NarrowContent({required this.intro, required this.progress});
+  final AnimationController intro;
+  final AnimationController progress;
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.displayLarge?.copyWith(
-      fontSize: isWide ? 60 : 42,
-      fontWeight: FontWeight.w700,
-      height: 1.02,
-      letterSpacing: -1.6,
-    );
-
-    final summaryStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-      color: AppColors.textSecondary,
-      height: 1.6,
-      fontSize: isWide ? 16 : 14,
-    );
-
-    final leading = Column(
-      crossAxisAlignment: isWide
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const _DashboardBadge(
-          label: 'AI PORTFOLIO SYSTEM',
-          icon: Icons.psychology_alt_rounded,
-        ),
-        const SizedBox(height: 22),
-        Text(
-          'Computer vision,\nrobotics, and AI systems\nthat feel shipped.',
-          textAlign: isWide ? TextAlign.start : TextAlign.center,
-          style: titleStyle,
-        ),
-        const SizedBox(height: 18),
-        Text(
-          'Booting an interface focused on perception, deep learning, inference APIs, and product-ready ML.',
-          textAlign: isWide ? TextAlign.start : TextAlign.center,
-          style: summaryStyle,
-        ),
-        const SizedBox(height: 22),
-        _buildSignalStrip(context),
-        const SizedBox(height: 30),
-        if (isWide) _buildLogs(context),
-        const SizedBox(height: 26),
-        Wrap(
-          alignment: isWide ? WrapAlignment.start : WrapAlignment.center,
-          spacing: 12,
-          runSpacing: 12,
-          children: const [
-            _InlineMetric(label: 'Computer Vision'),
-            _InlineMetric(label: 'ROS Systems'),
-            _InlineMetric(label: 'Inference APIs'),
-          ],
-        ),
-      ],
-    );
-
-    final sidePanel = _SplashStatusPanel(progress: progress);
-
-    if (isWide) {
-      return Row(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
         children: [
-          Expanded(flex: 6, child: leading),
-          const SizedBox(width: 36),
-          Expanded(flex: 4, child: sidePanel),
+          _LeftStatement(intro: intro, progress: progress, centered: true),
+          const SizedBox(height: 40),
+          _RightVisual(intro: intro, progress: progress, compact: true),
         ],
-      );
-    }
+      ),
+    );
+  }
+}
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [leading, const SizedBox(height: 28), sidePanel],
+// ── Left: name + headline + progress + chips ─────────────────────────────────
+class _LeftStatement extends StatelessWidget {
+  const _LeftStatement({
+    required this.intro,
+    required this.progress,
+    this.centered = false,
+  });
+  final AnimationController intro;
+  final AnimationController progress;
+  final bool centered;
+
+  Widget _stagger(Widget child, double from, {Offset slide = const Offset(0, 0.10)}) {
+    final anim = CurvedAnimation(
+      parent: intro,
+      curve: Interval(from, 1.0, curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(
+        position: Tween(begin: slide, end: Offset.zero).animate(anim),
+        child: child,
+      ),
     );
   }
 
-  Widget _buildSignalStrip(BuildContext context) {
-    const signals = [
-      ('AI', 'active'),
-      ('CV', 'real-time'),
-      ('ROS', 'integrated'),
-    ];
+  @override
+  Widget build(BuildContext context) {
+    final align =
+    centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final textAlign = centered ? TextAlign.center : TextAlign.start;
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: signals.map((signal) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.30),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: AppColors.borderStrong.withValues(alpha: 0.65),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: align,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Eyebrow — name + availability
+        _stagger(
+          Row(
+            mainAxisAlignment: centered
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
-              Text(
-                signal.$1,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.w700,
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF22C55E),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.55),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(width: 9),
               Text(
-                signal.$2,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                'CHINMAY BANSAL  ·  AVAILABLE',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.2,
                   color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+          0.0,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Headline — big, tight, three lines
+        _stagger(
+          Text(
+            'Computer vision\n& AI systems\nthat ship.',
+            textAlign: textAlign,
+            style: TextStyle(
+              fontSize: 58,
+              fontWeight: FontWeight.w900,
+              height: 0.96,
+              letterSpacing: -2.2,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          0.07,
+          slide: const Offset(0, 0.08),
+        ),
+
+        const SizedBox(height: 22),
+
+        // Subline
+        _stagger(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Text(
+              'Real-time perception · deep learning · ROS · inference APIs',
+              textAlign: textAlign,
+              style: TextStyle(
+                fontSize: 14.5,
+                color: AppColors.textMuted,
+                height: 1.62,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ),
+          0.16,
+        ),
+
+        const SizedBox(height: 32),
+
+        // Terminal log — kept, but refined
+        _stagger(
+          _TerminalLog(progress: progress),
+          0.26,
+        ),
+
+        const SizedBox(height: 28),
+
+        // Progress bar
+        _stagger(
+          _ProgressBar(progress: progress, centered: centered),
+          0.38,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Terminal log ──────────────────────────────────────────────────────────────
+class _TerminalLog extends StatelessWidget {
+  const _TerminalLog({required this.progress});
+  final AnimationController progress;
+
+  static const _logs = [
+    ('[Vision]',  'Initializing perception graph'),
+    ('[Models]',  'Loading inference nodes'),
+    ('[ROS]',     'Linking robot channels'),
+    ('[APIs]',    'Securing transport layer'),
+    ('[UI]',      'Rendering interactive shell'),
+    ('[Ready]',   'Portfolio system online'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Terminal title bar
+          Row(
+            children: [
+              _dot(const Color(0xFFFF5F56)),
+              const SizedBox(width: 6),
+              _dot(const Color(0xFFFFBD2E)),
+              const SizedBox(width: 6),
+              _dot(const Color(0xFF27C93F)),
+              const SizedBox(width: 12),
+              Text(
+                'boot.sh',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: progress,
+            builder: (_, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _logs.asMap().entries.map((e) {
+                  final i = e.key;
+                  final entry = e.value;
+                  final threshold = i / (_logs.length + 1);
+                  final visible = progress.value >= threshold;
+                  if (!visible) return const SizedBox.shrink();
+                  final isLast = i == _logs.length - 1;
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: i < _logs.length - 1 ? 5 : 0),
+                    child: Row(
+                      children: [
+                        Text(
+                          isLast ? '✓ ' : '› ',
+                          style: TextStyle(
+                            color: isLast
+                                ? const Color(0xFF22C55E)
+                                : AppColors.accent,
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          entry.$1,
+                          style: TextStyle(
+                            color: isLast
+                                ? const Color(0xFF22C55E)
+                                : AppColors.accent.withValues(alpha: 0.7),
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            entry.$2,
+                            style: TextStyle(
+                              color: isLast
+                                  ? const Color(0xFF22C55E)
+                                  .withValues(alpha: 0.8)
+                                  : AppColors.textMuted,
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dot(Color color) => Container(
+    width: 9,
+    height: 9,
+    decoration:
+    BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.7)),
+  );
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+class _ProgressBar extends StatelessWidget {
+  const _ProgressBar({required this.progress, this.centered = false});
+  final AnimationController progress;
+  final bool centered;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: progress,
+      builder: (_, _) {
+        final pct = (progress.value * 100).round();
+        return Column(
+          crossAxisAlignment: centered
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: centered
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: [
+                Text(
+                  'Loading',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textMuted,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$pct%',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.accent,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: centered ? double.infinity : 300,
+              height: 2,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(1),
+                child: Stack(
+                  children: [
+                    Container(
+                      color:
+                      AppColors.borderStrong.withValues(alpha: 0.25),
+                    ),
+                    FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress.value,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.accentGradientStrong,
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                              AppColors.accent.withValues(alpha: 0.5),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Right: lottie hero + radar underlay + signal chips ────────────────────────
+class _RightVisual extends StatelessWidget {
+  const _RightVisual({
+    required this.intro,
+    required this.progress,
+    this.compact = false,
+  });
+  final AnimationController intro;
+  final AnimationController progress;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final anim = CurvedAnimation(
+      parent: intro,
+      curve: const Interval(0.12, 1.0, curve: Curves.easeOutCubic),
+    );
+
+    final lottieSz = compact ? 240.0 : 340.0;
+
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0.05, 0), end: Offset.zero)
+            .animate(anim),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Main visual: radar behind, lottie in front ──────────────
+            SizedBox(
+              height: lottieSz,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Full-size radar
+                  Positioned.fill(
+                    child: AnimatedBuilder(
+                      animation: progress,
+                      builder: (_, _) => CustomPaint(
+                        painter: _RadarPainter(progress: progress.value),
+                      ),
+                    ),
+                  ),
+
+                  // Waving hand lottie — centred, generous size
+                  SizedBox(
+                    width: lottieSz * 0.72,
+                    height: lottieSz * 0.72,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => AppColors
+                          .accentGradientStrong
+                          .createShader(bounds),
+                      blendMode: BlendMode.modulate,
+                      child: Lottie.asset(
+                        'assets/animations/waving_hand.json',
+                        repeat: true,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+
+                  // Floating orbital nodes
+                  AnimatedBuilder(
+                    animation: progress,
+                    builder: (_, _) {
+                      final a = progress.value * 2 * pi;
+                      final r = lottieSz * 0.42;
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _floatNode('Vision',   a,         r),
+                          _floatNode('Models',   a + 2.09,  r),
+                          _floatNode('ROS',      a + 4.19,  r),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ── Status row ────────────────────────────────────────────────
+            _StatusRow(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _floatNode(String label, double angle, double radius) {
+    return Transform.translate(
+      offset: Offset(cos(angle) * radius, sin(angle) * radius),
+      child: _OrbitalChip(label: label),
+    );
+  }
+}
+
+class _OrbitalChip extends StatelessWidget {
+  const _OrbitalChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accent.withValues(alpha: 0.10),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status row below visual ───────────────────────────────────────────────────
+class _StatusRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      ('MODE',  'VISION'),
+      ('STACK', 'ROS · ML'),
+      ('STATE', 'LIVE'),
+    ];
+    return Row(
+      children: items.asMap().entries.map((e) {
+        final i = e.key;
+        final item = e.value;
+        return Expanded(
+          child: Row(
+            children: [
+              if (i > 0)
+                Container(
+                  width: 1,
+                  height: 28,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  color: AppColors.borderStrong.withValues(alpha: 0.25),
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.$1,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMuted,
+                        letterSpacing: 1.5,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.$2,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -480,473 +895,167 @@ class _SplashContent extends StatelessWidget {
       }).toList(),
     );
   }
-
-  Widget _buildLogs(BuildContext context) {
-    final logs = [
-      '[Vision] Initializing perception graph',
-      '[Models] Loading inference nodes',
-      '[ROS] Linking robot channels',
-      '[APIs] Securing transport layer',
-      '[UI] Rendering interactive shell',
-      '[Ready] Portfolio system online',
-    ];
-
-    return Container(
-      width: 420,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < logs.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6.0),
-              child: AnimatedBuilder(
-                animation: progress,
-                builder: (context, _) {
-                  final show = progress.value >= (i / (logs.length + 1));
-                  if (!show) return const SizedBox.shrink();
-                  return Row(
-                    children: [
-                      const Text(
-                        '> ',
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          logs[i],
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
-class _SplashStatusPanel extends StatelessWidget {
-  const _SplashStatusPanel({required this.progress});
-
-  final Animation<double> progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceGlass,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.borderStrong),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
-            blurRadius: 30,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Container(
-                height: 44,
-                width: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: AppColors.accentGradientStrong,
-                ),
-                child: const Icon(
-                  Icons.auto_graph_rounded,
-                  color: AppColors.background,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Session Booting',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Preparing live modules, motion layers, and AI signal blocks.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textMuted,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          SizedBox(
-            height: 194,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.6),
-                      ),
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.surfaceAlt.withValues(alpha: 0.55),
-                          AppColors.background.withValues(alpha: 0.12),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: AnimatedBuilder(
-                    animation: progress,
-                    builder: (context, _) => CustomPaint(
-                      painter: _SplashRadarPainter(progress: progress.value),
-                    ),
-                  ),
-                ),
-                Opacity(
-                  opacity: 0.88,
-                  child: Lottie.asset(
-                    'assets/animations/waving_hand.json',
-                    repeat: true,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                Container(
-                  height: 132,
-                  width: 132,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.20),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: const [
-              Expanded(child: _MiniStat(label: 'MODE', value: 'VISION')),
-              SizedBox(width: 10),
-              Expanded(child: _MiniStat(label: 'STACK', value: 'ROS / ML')),
-              SizedBox(width: 10),
-              Expanded(child: _MiniStat(label: 'STATE', value: 'LIVE')),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'Experience load progress',
-            style: Theme.of(context)
-                .textTheme
-                .labelLarge
-                ?.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 10),
-          AnimatedBuilder(
-            animation: progress,
-            builder: (context, _) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: progress.value,
-                      minHeight: 8,
-                      backgroundColor: AppColors.surfaceAlt,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.accent,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '${(progress.value * 100).round()}% loaded',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textMuted),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardBadge extends StatelessWidget {
-  const _DashboardBadge({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceGlass,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.borderStrong),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.accent),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textSecondary,
-              letterSpacing: 1.1,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineMetric extends StatelessWidget {
-  const _InlineMetric({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _SplashRadarPainter extends CustomPainter {
-  const _SplashRadarPainter({required this.progress});
-
+// ── Radar painter ─────────────────────────────────────────────────────────────
+class _RadarPainter extends CustomPainter {
+  const _RadarPainter({required this.progress});
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final radius = min(size.width, size.height) * 0.34;
-    final ringPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = AppColors.borderStrong.withValues(alpha: 0.42);
+    final maxR   = min(size.width, size.height) * 0.46;
 
-    for (double factor = 0.45; factor <= 1; factor += 0.18) {
-      canvas.drawCircle(center, radius * factor, ringPaint);
+    // Concentric rings
+    for (int i = 1; i <= 4; i++) {
+      canvas.drawCircle(
+        center,
+        maxR * i / 4,
+        Paint()
+          ..style      = PaintingStyle.stroke
+          ..strokeWidth = 0.8
+          ..color      = AppColors.accent.withValues(alpha: 0.05 + i * 0.02),
+      );
     }
 
-    final sweepAngle = (-pi / 2) + (progress * 2 * pi);
-    final sweepPaint = Paint()
-      ..shader = SweepGradient(
-        startAngle: sweepAngle,
-        endAngle: sweepAngle + (pi / 3),
-        colors: [
-          Colors.transparent,
-          AppColors.accentSoft.withValues(alpha: 0.06),
-          AppColors.accent.withValues(alpha: 0.18),
-        ],
-      ).createShader(
-        Rect.fromCircle(center: center, radius: radius),
+    // Cross hairs
+    final cross = Paint()
+      ..color      = AppColors.accent.withValues(alpha: 0.06)
+      ..strokeWidth = 0.8;
+    canvas.drawLine(Offset(center.dx, center.dy - maxR),
+        Offset(center.dx, center.dy + maxR), cross);
+    canvas.drawLine(Offset(center.dx - maxR, center.dy),
+        Offset(center.dx + maxR, center.dy), cross);
+
+    // Sweep
+    final sweepAngle = -pi / 2 + progress * 2 * pi;
+    const wedge = pi * 0.5;
+    final rect = Rect.fromCircle(center: center, radius: maxR);
+
+    canvas.drawArc(
+      rect,
+      sweepAngle - wedge,
+      wedge,
+      true,
+      Paint()
+        ..shader = SweepGradient(
+          center: Alignment.center,
+          startAngle: sweepAngle - wedge,
+          endAngle: sweepAngle,
+          colors: [
+            Colors.transparent,
+            AppColors.accent.withValues(alpha: 0.0),
+            AppColors.accent.withValues(alpha: 0.14),
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(rect)
+        ..style = PaintingStyle.fill,
+    );
+
+    // Leading edge
+    canvas.drawLine(
+      center,
+      Offset(center.dx + cos(sweepAngle) * maxR,
+          center.dy + sin(sweepAngle) * maxR),
+      Paint()
+        ..color      = AppColors.accent.withValues(alpha: 0.45)
+        ..strokeWidth = 1.2,
+    );
+
+    // Blips
+    final blips = [
+      (0.22, 0.30 * pi),
+      (0.48, 1.05 * pi),
+      (0.68, -0.15 * pi),
+      (0.85, 0.78 * pi),
+    ];
+    for (final b in blips) {
+      if (progress < b.$1) continue;
+      final fade = ((progress - b.$1) * 8).clamp(0.0, 1.0);
+      final bOff = Offset(
+        center.dx + cos(b.$2) * maxR * b.$1,
+        center.dy + sin(b.$2) * maxR * b.$1,
       );
-
-    canvas.drawCircle(center, radius, sweepPaint);
-
-    final pingPaint = Paint()
-      ..color = AppColors.accent.withValues(alpha: 0.78)
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 3; i++) {
-      final angle = (progress * 2 * pi) + (i * 1.8);
-      final dot = Offset(
-        center.dx + cos(angle) * radius * (0.45 + (i * 0.15)),
-        center.dy + sin(angle) * radius * (0.45 + (i * 0.15)),
-      );
-      canvas.drawCircle(dot, 3.5, pingPaint);
+      canvas.drawCircle(bOff, 5 * (1 - fade * 0.4),
+          Paint()..color = AppColors.accent.withValues(alpha: 0.10 * fade));
+      canvas.drawCircle(bOff, 2.5,
+          Paint()..color = AppColors.accent.withValues(alpha: 0.9 * fade));
     }
+
+    // Centre
+    canvas.drawCircle(center, 3,
+        Paint()..color = AppColors.accent);
   }
 
   @override
-  bool shouldRepaint(covariant _SplashRadarPainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
+  bool shouldRepaint(covariant _RadarPainter old) =>
+      old.progress != progress;
 }
 
-/// Computes the static background layer (Gradient & Grid).
-/// Wrapped in a RepaintBoundary, this is painted exactly once.
+// ── Static background ─────────────────────────────────────────────────────────
 class _StaticBackgroundPainter extends CustomPainter {
   const _StaticBackgroundPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [AppColors.background, AppColors.backgroundElevated],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-
-    final gridPaint = Paint()
-      ..color = AppColors.border.withValues(alpha: 0.24)
-      ..strokeWidth = 1;
-
-    const grid = 40.0;
-    for (double x = 0; x <= size.width; x += grid) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-    }
-    for (double y = 0; y <= size.height; y += grid) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [AppColors.background, AppColors.backgroundElevated],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
+    );
+    final dot = Paint()
+      ..color = AppColors.border.withValues(alpha: 0.16)
+      ..style = PaintingStyle.fill;
+    const gap = 44.0;
+    for (double x = 0; x <= size.width; x += gap) {
+      for (double y = 0; y <= size.height; y += gap) {
+        canvas.drawCircle(Offset(x, y), 0.9, dot);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _StaticBackgroundPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _StaticBackgroundPainter _) => false;
 }
 
-/// Computes the dynamic orb layers. This repaints every frame but avoids
-/// recalculating the heavier background grid instructions.
+// ── Animated orb painter ──────────────────────────────────────────────────────
 class _AnimatedOrbPainter extends CustomPainter {
   const _AnimatedOrbPainter({required this.progress});
-
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final orbPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          AppColors.accentSoft.withValues(alpha: 0.24),
-          AppColors.accent.withValues(alpha: 0.12),
-          Colors.transparent,
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: Offset(
-            size.width * (0.22 + (sin(progress * 2 * pi) * 0.06)),
-            size.height * (0.18 + (cos(progress * 2 * pi) * 0.04)),
-          ),
-          radius: size.shortestSide * 0.44,
-        ),
-      );
-    canvas.drawCircle(
-      Offset(size.width * 0.22, size.height * 0.18),
-      size.shortestSide * 0.44,
-      orbPaint,
-    );
+    _orb(canvas,
+        Offset(size.width * (0.18 + sin(progress * 2 * pi) * 0.05),
+            size.height * (0.22 + cos(progress * 2 * pi) * 0.04)),
+        size.shortestSide * 0.52,
+        AppColors.accentSoft,
+        0.20);
 
-    final orbPaintRight = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          AppColors.accentSecondary.withValues(alpha: 0.16),
-          Colors.transparent,
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.84, size.height * 0.74),
-          radius: size.shortestSide * 0.38,
-        ),
-      );
-    canvas.drawCircle(
-      Offset(size.width * 0.84, size.height * 0.74),
-      size.shortestSide * 0.38,
-      orbPaintRight,
+    _orb(canvas,
+        Offset(size.width * 0.86, size.height * 0.76),
+        size.shortestSide * 0.38,
+        AppColors.accentSecondary,
+        0.13);
+  }
+
+  void _orb(Canvas c, Offset center, double r, Color color, double alpha) {
+    c.drawCircle(
+      center,
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [color.withValues(alpha: alpha), Colors.transparent],
+        ).createShader(Rect.fromCircle(center: center, radius: r)),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _AnimatedOrbPainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
+  bool shouldRepaint(covariant _AnimatedOrbPainter old) =>
+      old.progress != progress;
 }

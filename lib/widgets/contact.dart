@@ -220,7 +220,7 @@ class _AvailabilityBadgeState extends State<_AvailabilityBadge>
         children: [
           AnimatedBuilder(
             animation: _pulse,
-            builder: (_, __) => Container(
+            builder: (_, _) => Container(
               width: 7,
               height: 7,
               decoration: BoxDecoration(

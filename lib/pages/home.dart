@@ -193,38 +193,6 @@ class _HomePageState extends State<HomePage> {
                               scaffoldKey.currentState?.openEndDrawer(),
                         ),
                       ),
-                      // Animated scroll progress bar
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        child: AnimatedBuilder(
-                          animation: scrollController,
-                          builder: (context, _) {
-                            final maxScroll = (scrollController.hasClients && scrollController.position.hasContentDimensions)
-                                ? scrollController.position.maxScrollExtent
-                                : 0.0;
-                            final progress = maxScroll == 0
-                                ? 0.0
-                                : (scrollController.offset / maxScroll)
-                                .clamp(0.0, 1.0);
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 60),
-                              height: 2,
-                              width: MediaQuery.of(context).size.width * progress,
-                              decoration: BoxDecoration(
-                                gradient: AppColors.accentGradientStrong,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.accent.withValues(alpha: 0.6),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                     ],
                   ),
                 ),

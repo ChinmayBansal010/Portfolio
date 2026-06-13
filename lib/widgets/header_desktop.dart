@@ -16,97 +16,145 @@ class HeaderDesktop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      margin: const EdgeInsets.fromLTRB(22, 10, 22, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceGlass,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderStrong),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 12, 32, 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // ── Logo ───────────────────────────────────────────────────
           SiteLogo(onTap: () => onNavMenuTap(0)),
+
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.background.withValues(alpha: 0.26),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(navTitles.length, (index) {
-                return _HeaderNavItem(
-                  title: navTitles[index],
-                  icon: navIcons[index],
-                  onTap: () => onNavMenuTap(index),
-                  isActive: index == activeIndex,
-                );
-              }),
-            ),
+
+          // ── Pill nav ────────────────────────────────────────────────
+          _PillNav(
+            activeIndex: activeIndex,
+            onTap: onNavMenuTap,
           ),
-          const SizedBox(width: 14),
-          const _BlogButton(),
+
+          const Spacer(),
+
+          // ── Blog CTA ────────────────────────────────────────────────
+          _BlogButton(),
         ],
       ),
     );
   }
 }
 
-class _BlogButton extends StatefulWidget {
-  const _BlogButton();
+// ── Pill nav — centered, floats on the frosted header ─────────────────────
+class _PillNav extends StatelessWidget {
+  const _PillNav({required this.activeIndex, required this.onTap});
 
-  @override
-  State<_BlogButton> createState() => _BlogButtonState();
-}
-
-class _BlogButtonState extends State<_BlogButton> {
-  bool _isHovered = false;
+  final int activeIndex;
+  final Function(int) onTap;
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.borderStrong.withValues(alpha: 0.35),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(navTitles.length, (i) {
+          return _NavPill(
+            label: navTitles[i],
+            icon: navIcons[i],
+            isActive: i == activeIndex,
+            onTap: () => onTap(i),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _NavPill extends StatefulWidget {
+  const _NavPill({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  State<_NavPill> createState() => _NavPillState();
+}
+
+class _NavPillState extends State<_NavPill> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final lit = widget.isActive || _hovered;
+
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => launchUrl(Uri.parse(blogUrl)),
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
-            color: _isHovered 
-                ? AppColors.accent.withValues(alpha: 0.12)
-                : AppColors.background.withValues(alpha: 0.26),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _isHovered ? AppColors.accent : AppColors.border,
-            ),
+            // Active: solid accent fill. Hover: subtle surface.
+            color: widget.isActive
+                ? AppColors.accent
+                : _hovered
+                ? AppColors.surface
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: widget.isActive
+                ? [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ]
+                : [],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.auto_stories_rounded,
-                size: 16,
-                color: _isHovered ? AppColors.accent : AppColors.textSecondary,
+                widget.icon,
+                size: 15,
+                color: widget.isActive
+                    ? AppColors.background
+                    : lit
+                    ? AppColors.textPrimary
+                    : AppColors.textMuted,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 7),
               Text(
-                'BLOG',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: _isHovered ? AppColors.accent : AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
+                widget.label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: widget.isActive
+                      ? FontWeight.w700
+                      : FontWeight.w600,
+                  letterSpacing: 0.1,
+                  color: widget.isActive
+                      ? AppColors.background
+                      : lit
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -117,72 +165,60 @@ class _BlogButtonState extends State<_BlogButton> {
   }
 }
 
-class _HeaderNavItem extends StatefulWidget {
-  const _HeaderNavItem({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    required this.isActive,
-  });
-
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isActive;
-
+// ── Blog button ────────────────────────────────────────────────────────────
+class _BlogButton extends StatefulWidget {
   @override
-  State<_HeaderNavItem> createState() => _HeaderNavItemState();
+  State<_BlogButton> createState() => _BlogButtonState();
 }
 
-class _HeaderNavItemState extends State<_HeaderNavItem> {
-  bool _isHovering = false;
+class _BlogButtonState extends State<_BlogButton> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final active = widget.isActive || _isHovering;
-
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: widget.onTap,
+        onTap: () => launchUrl(Uri.parse(blogUrl)),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            gradient: widget.isActive ? AppColors.accentGradient : null,
-            color: widget.isActive
-                ? null
-                : (_isHovering
-                      ? AppColors.surface.withValues(alpha: 0.82)
-                      : Colors.transparent),
-            borderRadius: BorderRadius.circular(16),
+            color: _hovered
+                ? AppColors.surface
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hovered
+                  ? AppColors.borderStrong.withValues(alpha: 0.6)
+                  : AppColors.borderStrong.withValues(alpha: 0.25),
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.icon,
-                size: 16,
-                color: widget.isActive
-                    ? AppColors.background
-                    : (active ? AppColors.textPrimary : AppColors.textMuted),
+                Icons.auto_stories_rounded,
+                size: 15,
+                color: _hovered
+                    ? AppColors.textPrimary
+                    : AppColors.textMuted,
               ),
-              const SizedBox(width: 8),
-              Text(
-                widget.title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: widget.isActive
-                      ? FontWeight.w700
-                      : FontWeight.w600,
-                  color: widget.isActive
-                      ? AppColors.background
-                      : (active
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary),
+              const SizedBox(width: 7),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
+                  color: _hovered
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
                 ),
+                child: const Text('Blog'),
               ),
             ],
           ),

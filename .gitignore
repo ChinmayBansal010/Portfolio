@@ -51,3 +51,4 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/build/58f78ba30496f56a2086825f9811be5c.cache.dill.track.dill

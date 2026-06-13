@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import
+
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -395,7 +397,7 @@ class _CardBodyDesktop extends StatelessWidget {
                         : AppColors.textPrimary.withValues(alpha: 0.07),
                   ),
                   child: Text(
-                    '${(index + 1).toString().padLeft(2, '0')}',
+                    (index + 1).toString().padLeft(2, '0'),
                   ),
                 ),
                 // Vertical accent line
@@ -575,7 +577,7 @@ class _CardBodyCompact extends StatelessWidget {
           children: [
             // Small index badge
             Text(
-              '${(index + 1).toString().padLeft(2, '0')}',
+              (index + 1).toString().padLeft(2, '0'),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,

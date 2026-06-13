@@ -14,111 +14,66 @@ class DrawerMobile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
-      width: MediaQuery.of(context).size.width * 0.84,
+      width: MediaQuery.of(context).size.width * 0.88,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.background.withValues(alpha: 0.96),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            bottomLeft: Radius.circular(24),
-          ),
+          // Deep, near-opaque background — the nebula shows faintly through
+          color: AppColors.background.withValues(alpha: 0.97),
           border: Border(
-            left: BorderSide(color: AppColors.accent.withValues(alpha: 0.18)),
+            left: BorderSide(
+              color: AppColors.accent.withValues(alpha: 0.15),
+              width: 1,
+            ),
           ),
         ),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(22, 22, 16, 16),
-                child: Row(
-                  children: [
-                    const SiteLogo(),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: AppColors.textPrimary,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.08, end: 0),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                child: Text(
-                  'AI-first portfolio',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
+              // ── Header ───────────────────────────────────────────────
+              _DrawerHeader()
+                  .animate()
+                  .fadeIn(duration: 280.ms)
+                  .slideX(begin: 0.06, end: 0, curve: Curves.easeOut),
+
+              // ── Nav items ─────────────────────────────────────────────
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemCount: navTitles.length,
-                  itemBuilder: (context, i) {
-                    return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _DrawerNavItem(
-                            icon: navIcons[i],
-                            label: navTitles[i],
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              onNavItemTap(i);
-                            },
-                          ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Column(
+                    children: navTitles.asMap().entries.map((e) {
+                      final i = e.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: _NavItem(
+                          index: i,
+                          icon: navIcons[i],
+                          label: navTitles[i],
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            onNavItemTap(i);
+                          },
                         )
-                        .animate()
-                        .fadeIn(duration: 320.ms, delay: (70 * i).ms)
-                        .slideX(begin: 0.08, end: 0);
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.55),
-                  border: Border(
-                    top: BorderSide(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                    ),
+                            .animate()
+                            .fadeIn(
+                          duration: 340.ms,
+                          delay: (60 + i * 55).ms,
+                        )
+                            .slideX(
+                          begin: 0.07,
+                          end: 0,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: const [
-                        _SocialIconButton(
-                          icon: Icons.code_rounded,
-                          url: 'https://github.com/ChinmayBansal010',
-                        ),
-                        _SocialIconButton(
-                          icon: Icons.work_outline_rounded,
-                          url: 'https://linkedin.com/in/xenoryx',
-                        ),
-                        _SocialIconButton(
-                          icon: Icons.mail_outline_rounded,
-                          url: 'mailto:chinmay8521@gmail.com',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      '© ${DateTime.now().year} Chinmay Bansal',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textMuted,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ],
-                ),
               ),
+
+              // ── Footer ────────────────────────────────────────────────
+              _DrawerFooter()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 300.ms),
             ],
           ),
         ),
@@ -127,46 +82,99 @@ class DrawerMobile extends StatelessWidget {
   }
 }
 
-class _SocialIconButton extends StatelessWidget {
-  const _SocialIconButton({required this.icon, required this.url});
-
-  final IconData icon;
-  final String url;
-
+// ── Header ────────────────────────────────────────────────────────────────────
+class _DrawerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => launchUrl(Uri.parse(url)),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.background.withValues(alpha: 0.52),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Icon(icon, color: AppColors.accent, size: 20),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 20, 12, 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Logo + tagline stacked
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SiteLogo(),
+              const SizedBox(height: 4),
+              // Availability indicator
+              Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF22C55E),
+                    ),
+                  )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .scaleXY(
+                    begin: 0.7,
+                    end: 1.3,
+                    duration: 1200.ms,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Available for work',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF22C55E),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const Spacer(),
+
+          // Close button
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.surface.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.borderStrong.withValues(alpha: 0.4),
+                ),
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.textSecondary,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DrawerNavItem extends StatefulWidget {
-  const _DrawerNavItem({
+// ── Nav item ──────────────────────────────────────────────────────────────────
+class _NavItem extends StatefulWidget {
+  const _NavItem({
+    required this.index,
     required this.icon,
     required this.label,
     required this.onTap,
   });
 
+  final int index;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
   @override
-  State<_DrawerNavItem> createState() => _DrawerNavItemState();
+  State<_NavItem> createState() => _NavItemState();
 }
 
-class _DrawerNavItemState extends State<_DrawerNavItem> {
+class _NavItemState extends State<_NavItem> {
   bool _pressed = false;
 
   @override
@@ -174,43 +182,229 @@ class _DrawerNavItemState extends State<_DrawerNavItem> {
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTap: widget.onTap,
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: _pressed
-              ? AppColors.accent.withValues(alpha: 0.10)
-              : AppColors.background.withValues(alpha: 0.25),
-          borderRadius: BorderRadius.circular(18),
+              ? AppColors.accent.withValues(alpha: 0.08)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _pressed ? AppColors.accentSoft : AppColors.border,
+            color: _pressed
+                ? AppColors.accent.withValues(alpha: 0.3)
+                : AppColors.borderStrong.withValues(alpha: 0.2),
+            width: 1.5,
           ),
         ),
         child: Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                gradient: AppColors.accentGradient,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(widget.icon, color: AppColors.background, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
+            // Index number — typographic accent
+            SizedBox(
+              width: 28,
               child: Text(
-                widget.label,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+                '0${widget.index + 1}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: _pressed
+                      ? AppColors.accent
+                      : AppColors.textMuted,
+                  letterSpacing: 0.5,
+                  fontFamily: 'monospace',
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+
+            // Thin separator
+            Container(
+              width: 1,
+              height: 20,
+              margin: const EdgeInsets.symmetric(horizontal: 14),
+              color: AppColors.borderStrong.withValues(alpha: 0.3),
+            ),
+
+            // Icon — small, not in a gradient box
+            Icon(
+              widget.icon,
+              size: 18,
+              color: _pressed ? AppColors.accent : AppColors.textSecondary,
+            ),
+
+            const SizedBox(width: 14),
+
+            // Label
+            Expanded(
+              child: Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: _pressed
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimary.withValues(alpha: 0.85),
+                ),
+              ),
+            ),
+
+            // Arrow
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              transform: Matrix4.translationValues(
+                _pressed ? 4 : 0,
+                0,
+                0,
+              ),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 16,
+                color: _pressed
+                    ? AppColors.accent
+                    : AppColors.textMuted.withValues(alpha: 0.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────────
+class _DrawerFooter extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: AppColors.borderStrong.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Social row with labels
+          Row(
+            children: const [
+              _SocialBtn(
+                icon: Icons.code_rounded,
+                label: 'GitHub',
+                url: 'https://github.com/ChinmayBansal010',
+              ),
+              SizedBox(width: 10),
+              _SocialBtn(
+                icon: Icons.work_outline_rounded,
+                label: 'LinkedIn',
+                url: 'https://linkedin.com/in/xenoryx',
+              ),
+              SizedBox(width: 10),
+              _SocialBtn(
+                icon: Icons.mail_outline_rounded,
+                label: 'Email',
+                url: 'mailto:chinmay8521@gmail.com',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // Name + copyright — quiet
+          Row(
+            children: [
+              Text(
+                'Chinmay Bansal',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '© ${DateTime.now().year}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialBtn extends StatefulWidget {
+  const _SocialBtn({
+    required this.icon,
+    required this.label,
+    required this.url,
+  });
+
+  final IconData icon;
+  final String label;
+  final String url;
+
+  @override
+  State<_SocialBtn> createState() => _SocialBtnState();
+}
+
+class _SocialBtnState extends State<_SocialBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        launchUrl(Uri.parse(widget.url));
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: _pressed
+              ? AppColors.accent.withValues(alpha: 0.1)
+              : AppColors.surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _pressed
+                ? AppColors.accent.withValues(alpha: 0.3)
+                : AppColors.borderStrong.withValues(alpha: 0.25),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              widget.icon,
+              size: 14,
+              color: _pressed ? AppColors.accent : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _pressed
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),

@@ -12,76 +12,127 @@ class HeaderMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 62,
-      margin: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceGlass,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderStrong),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 20,
-            offset: const Offset(0, 12),
-          ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // ── Logo ─────────────────────────────────────────────────────
+          SiteLogo(onTap: onLogoTap),
+
+          const Spacer(),
+
+          // ── Blog link — quiet text button ────────────────────────────
+          _BlogButton(),
+
+          const SizedBox(width: 10),
+
+          // ── Menu button ───────────────────────────────────────────────
+          _MenuButton(onTap: onMenuTap),
         ],
       ),
-      child: Row(
-        children: [
-          SiteLogo(onTap: onLogoTap),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => launchUrl(Uri.parse(blogUrl)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.background.withValues(alpha: 0.28),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_stories_rounded,
-                    color: AppColors.accent,
-                    size: 16,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'BLOG',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      fontFamily: 'SpaceGrotesk',
-                    ),
-                  ),
-                ],
+    );
+  }
+}
+
+// ── Blog button ────────────────────────────────────────────────────────────
+class _BlogButton extends StatefulWidget {
+  @override
+  State<_BlogButton> createState() => _BlogButtonState();
+}
+
+class _BlogButtonState extends State<_BlogButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        launchUrl(Uri.parse(blogUrl));
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+        decoration: BoxDecoration(
+          color: _pressed
+              ? AppColors.surface
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _pressed
+                ? AppColors.borderStrong.withValues(alpha: 0.5)
+                : AppColors.borderStrong.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_stories_rounded,
+              size: 14,
+              color: _pressed ? AppColors.textPrimary : AppColors.textMuted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Blog',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _pressed ? AppColors.textPrimary : AppColors.textMuted,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Menu / hamburger button ────────────────────────────────────────────────
+class _MenuButton extends StatefulWidget {
+  const _MenuButton({this.onTap});
+  final VoidCallback? onTap;
+
+  @override
+  State<_MenuButton> createState() => _MenuButtonState();
+}
+
+class _MenuButtonState extends State<_MenuButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap?.call();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: _pressed
+              ? AppColors.accent.withValues(alpha: 0.1)
+              : AppColors.surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: _pressed
+                ? AppColors.accent.withValues(alpha: 0.35)
+                : AppColors.borderStrong.withValues(alpha: 0.3),
+            width: 1,
           ),
-          const SizedBox(width: 10),
-          InkWell(
-            onTap: onMenuTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.background.withValues(alpha: 0.28),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Icon(
-                Icons.menu_rounded,
-                color: AppColors.textPrimary,
-                size: 22,
-              ),
-            ),
-          ),
-        ],
+        ),
+        child: Icon(
+          Icons.menu_rounded,
+          size: 19,
+          color: _pressed ? AppColors.accent : AppColors.textSecondary,
+        ),
       ),
     );
   }

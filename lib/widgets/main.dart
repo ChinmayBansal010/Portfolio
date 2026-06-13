@@ -647,7 +647,7 @@ class _StatusCardState extends State<_StatusCard> {
                   // Orbital nodes around the lottie
                   AnimatedBuilder(
                     animation: widget.orbit,
-                    builder: (_, __) {
+                    builder: (_, _) {
                       final a = widget.orbit.value * 2 * pi;
                       return Stack(
                         alignment: Alignment.center,
