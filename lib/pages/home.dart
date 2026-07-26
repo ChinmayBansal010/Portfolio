@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -19,6 +18,14 @@ import 'package:portfolio/widgets/header_mobile.dart';
 import 'package:portfolio/widgets/main.dart';
 import 'package:portfolio/widgets/project.dart';
 import 'package:portfolio/widgets/skill.dart';
+
+// A single small easing helper used across painters so all motion in the
+// scene shares the same "weight" — this is most of what makes hand-rolled
+// canvas animation read as premium vs. janky.
+double _easeInOutCubic(double t) {
+  t = t.clamp(0.0, 1.0);
+  return t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2;
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -52,7 +59,7 @@ class _HomePageState extends State<HomePage> {
   void _onScroll() {
     if (!mounted || _isScrollingProgrammatically) return;
     if (!scrollController.hasClients || !scrollController.position.hasContentDimensions) return;
-    
+
     final maxScroll = scrollController.position.maxScrollExtent;
     final viewportHeight = MediaQuery.sizeOf(context).height;
     const activationLine = 130.0;
@@ -117,16 +124,16 @@ class _HomePageState extends State<HomePage> {
           ),
           body: Stack(
             children: [
+              // ── Layer 0: deep space gradient wash (sits behind everything,
+              // gives the nebula/stars something richer than flat bg to sit on)
+              Positioned.fill(child: _DeepSpaceWash()),
+
               Positioned.fill(
-                child: _NebulaBackground(
-                  scrollController: scrollController,
-                ),
+                child: _NebulaBackground(scrollController: scrollController),
               ),
 
               Positioned.fill(
-                child: _PerspectiveGridPainterWidget(
-                  scrollController: scrollController,
-                ),
+                child: _PerspectiveGridPainterWidget(scrollController: scrollController),
               ),
 
               Positioned.fill(
@@ -134,6 +141,11 @@ class _HomePageState extends State<HomePage> {
                   scrollController: scrollController,
                   particleCount: isDesktop ? 700 : 300,
                 ),
+              ),
+
+              // ── Cinematic black hole layer ──
+              Positioned.fill(
+                child: _BlackHoleEffect(scrollController: scrollController),
               ),
 
               Positioned.fill(
@@ -167,7 +179,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // ── Layer 5: Frosted header + scroll progress ─────────────────
+              // ── Frosted header + scroll progress ─────────────────
               Positioned(
                 top: 0,
                 left: 0,
@@ -189,8 +201,7 @@ class _HomePageState extends State<HomePage> {
                         )
                             : HeaderMobile(
                           onLogoTap: () => _navigateToSection(0),
-                          onMenuTap: () =>
-                              scaffoldKey.currentState?.openEndDrawer(),
+                          onMenuTap: () => scaffoldKey.currentState?.openEndDrawer(),
                         ),
                       ),
                     ],
@@ -205,6 +216,36 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Layer 0: Deep space wash — a static-ish vertical gradient so every layer on
+// top of it has real contrast instead of sitting on a flat solid color.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DeepSpaceWash extends StatelessWidget {
+  const _DeepSpaceWash();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.background,
+            Color.lerp(AppColors.background, const Color(0xFF0A0714), 0.6)!,
+            Color.lerp(AppColors.background, const Color(0xFF06060C), 0.85)!,
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nebula — three drifting, breathing color fields instead of two static ones.
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _NebulaBackground extends StatefulWidget {
   final ScrollController scrollController;
@@ -238,7 +279,8 @@ class _NebulaBackgroundState extends State<_NebulaBackground>
     return AnimatedBuilder(
       animation: widget.scrollController,
       builder: (context, _) {
-        final offset = (widget.scrollController.hasClients && widget.scrollController.position.hasContentDimensions)
+        final offset = (widget.scrollController.hasClients &&
+            widget.scrollController.position.hasContentDimensions)
             ? widget.scrollController.offset
             : 0.0;
         return CustomPaint(painter: _NebulaPainter(t: _t, scrollOffset: offset));
@@ -252,58 +294,97 @@ class _NebulaPainter extends CustomPainter {
   final double scrollOffset;
   _NebulaPainter({required this.t, required this.scrollOffset});
 
+  void _blob(Canvas canvas, Size size, Offset center, double radius, double hue,
+      double sat, double light, double alpha) {
+    final shader = RadialGradient(
+      colors: [
+        HSLColor.fromAHSL(alpha, hue, sat, light).toColor(),
+        HSLColor.fromAHSL(alpha * 0.4, hue, sat, light).toColor(),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.45, 1.0],
+    ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..shader = shader);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    // Slow-breathing dual nebula
-    final hue1 = 260.0 + sin(t * 0.15) * 20;
-    final hue2 = 195.0 + cos(t * 0.1) * 15;
-    final alpha1 = 0.055 + sin(t * 0.2) * 0.015;
-    final alpha2 = 0.04 + cos(t * 0.17) * 0.01;
-
     final scrollShift = scrollOffset * 0.22;
-    final center1 = Offset(size.width * 0.3, size.height * 0.4 - scrollShift);
-    final center2 = Offset(size.width * 0.75, size.height * 0.6 - scrollShift * 0.7);
 
-    final g1 = RadialGradient(
-      colors: [
-        HSLColor.fromAHSL(alpha1, hue1, 0.7, 0.35).toColor(),
-        Colors.transparent,
-      ],
-      stops: const [0.0, 1.0],
-    ).createShader(Rect.fromCircle(center: center1, radius: size.width * 0.55));
+    // Violet drift, slow figure-eight wander
+    final hue1 = 260.0 + sin(t * 0.15) * 20;
+    final alpha1 = 0.06 + sin(t * 0.2) * 0.016;
+    final c1 = Offset(
+      size.width * (0.3 + sin(t * 0.05) * 0.05),
+      size.height * 0.4 - scrollShift + cos(t * 0.07) * 30,
+    );
+    _blob(canvas, size, c1, size.width * 0.55, hue1, 0.7, 0.35, alpha1);
 
-    final g2 = RadialGradient(
-      colors: [
-        HSLColor.fromAHSL(alpha2, hue2, 0.65, 0.3).toColor(),
-        Colors.transparent,
-      ],
-      stops: const [0.0, 1.0],
-    ).createShader(Rect.fromCircle(center: center2, radius: size.width * 0.45));
+    // Cyan drift, opposing phase
+    final hue2 = 195.0 + cos(t * 0.1) * 15;
+    final alpha2 = 0.042 + cos(t * 0.17) * 0.012;
+    final c2 = Offset(
+      size.width * (0.75 + cos(t * 0.04) * 0.04),
+      size.height * 0.6 - scrollShift * 0.7 + sin(t * 0.06) * 26,
+    );
+    _blob(canvas, size, c2, size.width * 0.45, hue2, 0.65, 0.3, alpha2);
 
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height),
-        Paint()..shader = g1);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height),
-        Paint()..shader = g2);
+    // Faint rose accent, very slow, gives depth without competing for attention
+    final hue3 = 320.0 + sin(t * 0.08) * 12;
+    final alpha3 = 0.022 + sin(t * 0.11 + 1.2) * 0.008;
+    final c3 = Offset(
+      size.width * (0.5 + sin(t * 0.03 + 2) * 0.15),
+      size.height * (0.85 - scrollShift * 0.4 / size.height),
+    );
+    _blob(canvas, size, c3, size.width * 0.4, hue3, 0.6, 0.4, alpha3.clamp(0.0, 1.0));
   }
 
   @override
   bool shouldRepaint(_NebulaPainter old) => old.t != t || old.scrollOffset != scrollOffset;
 }
 
-class _PerspectiveGridPainterWidget extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// Perspective grid — smoother easing into the vanishing point, gentle pulse.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PerspectiveGridPainterWidget extends StatefulWidget {
   final ScrollController scrollController;
   const _PerspectiveGridPainterWidget({required this.scrollController});
 
   @override
+  State<_PerspectiveGridPainterWidget> createState() => _PerspectiveGridPainterWidgetState();
+}
+
+class _PerspectiveGridPainterWidgetState extends State<_PerspectiveGridPainterWidget>
+    with SingleTickerProviderStateMixin {
+  late Ticker _ticker;
+  double _t = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((elapsed) {
+      if (mounted) setState(() => _t = elapsed.inMilliseconds / 1000.0);
+    })..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: scrollController,
+      animation: widget.scrollController,
       builder: (context, _) {
-        final offset = (scrollController.hasClients && scrollController.position.hasContentDimensions)
-            ? scrollController.offset
+        final offset = (widget.scrollController.hasClients &&
+            widget.scrollController.position.hasContentDimensions)
+            ? widget.scrollController.offset
             : 0.0;
         return CustomPaint(
-          painter: _PerspectiveGridPainter(scrollOffset: offset),
+          painter: _PerspectiveGridPainter(scrollOffset: offset, t: _t),
           size: Size.infinite,
         );
       },
@@ -313,7 +394,8 @@ class _PerspectiveGridPainterWidget extends StatelessWidget {
 
 class _PerspectiveGridPainter extends CustomPainter {
   final double scrollOffset;
-  _PerspectiveGridPainter({required this.scrollOffset});
+  final double t;
+  _PerspectiveGridPainter({required this.scrollOffset, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -321,13 +403,14 @@ class _PerspectiveGridPainter extends CustomPainter {
     final vanishY = size.height * 0.68;
     final scroll = scrollOffset * 0.001;
     const lineCount = 14;
+    final pulse = 0.5 + 0.5 * sin(t * 0.35);
 
     final linePaint = Paint()..strokeWidth = 0.5;
 
     for (int i = 0; i <= lineCount; i++) {
-      final t = i / lineCount;
-      final endX = (t - 0.5) * size.width * 2.4;
-      final alpha = 0.025 + 0.015 * sin(scroll + i * 0.4);
+      final lt = i / lineCount;
+      final endX = (lt - 0.5) * size.width * 2.4;
+      final alpha = (0.024 + 0.016 * sin(scroll + i * 0.4)) * (0.75 + 0.25 * pulse);
       final grad = ui.Gradient.linear(
         Offset(vanishX, vanishY),
         Offset(vanishX + endX, size.height),
@@ -339,16 +422,15 @@ class _PerspectiveGridPainter extends CustomPainter {
         [0.0, 0.5, 1.0],
       );
       linePaint.shader = grad;
-      canvas.drawLine(
-          Offset(vanishX, vanishY), Offset(vanishX + endX, size.height), linePaint);
+      canvas.drawLine(Offset(vanishX, vanishY), Offset(vanishX + endX, size.height), linePaint);
     }
 
     for (int row = 1; row <= 9; row++) {
       final r = row / 9;
-      final ease = r * r;
+      final ease = _easeInOutCubic(r * r);
       final y = vanishY + (size.height - vanishY) * ease;
       final xSpan = size.width * 1.2 * ease;
-      final alpha = (0.02 + 0.01 * sin(scroll * 2 + row * 0.5)) *
+      final alpha = (0.018 + 0.01 * sin(scroll * 2 + row * 0.5)) *
           (1 - (y - vanishY) / (size.height - vanishY) * 0.4);
       final grad = ui.Gradient.linear(
         Offset(vanishX - xSpan, y),
@@ -364,16 +446,33 @@ class _PerspectiveGridPainter extends CustomPainter {
       linePaint.shader = grad;
       canvas.drawLine(Offset(vanishX - xSpan, y), Offset(vanishX + xSpan, y), linePaint);
     }
+
+    // Soft glow at the vanishing point itself — anchors the whole grid.
+    final glow = ui.Gradient.radial(
+      Offset(vanishX, vanishY),
+      140,
+      [
+        Color.fromRGBO(108, 99, 255, 0.05 * (0.6 + 0.4 * pulse)),
+        Colors.transparent,
+      ],
+    );
+    canvas.drawCircle(Offset(vanishX, vanishY), 140, Paint()..shader = glow);
   }
 
   @override
   bool shouldRepaint(_PerspectiveGridPainter old) =>
-      old.scrollOffset != scrollOffset;
+      old.scrollOffset != scrollOffset || old.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Starfield — twinkle + parallax + velocity streaks on fast scroll (the
+// "hyperspace" read that sells a hand-painted canvas as a real particle engine).
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _StarParticle {
-  late double x, y, z, ox, oy, twinkle, twinkleSpeed, radius;
+  late double x, y, z, twinkle, twinkleSpeed, radius;
+  double prevScreenX = 0, prevScreenY = 0;
+  bool hasPrev = false;
   late Color baseColor;
 
   static final _rng = Random();
@@ -384,6 +483,7 @@ class _StarParticle {
     Color(0xFF06B6D4),
     Color(0xFFA78BFA),
     Color(0xFFF472B6),
+    Color(0xFFFFFFFF),
   ];
 
   _StarParticle() {
@@ -391,52 +491,67 @@ class _StarParticle {
   }
 
   void _reset({bool init = false}) {
-    ox = x = (_rng.nextDouble() - 0.5) * 3200;
-    oy = y = (_rng.nextDouble() - 0.5) * 3200;
+    x = (_rng.nextDouble() - 0.5) * 3200;
+    y = (_rng.nextDouble() - 0.5) * 3200;
     z = init ? _rng.nextDouble() * _depth : _depth;
     twinkle = _rng.nextDouble() * pi * 2;
     twinkleSpeed = 0.025 + _rng.nextDouble() * 0.04;
     radius = 0.5 + _rng.nextDouble() * 2.0;
     baseColor = _colors[_rng.nextInt(_colors.length)];
+    hasPrev = false;
   }
 
-  void update({required double scrollDelta, required double idleT}) {
+  void update({required double scrollDelta}) {
     z -= scrollDelta * 1.2 + 0.35;
     twinkle += twinkleSpeed;
     if (z < -_fov) _reset();
   }
 
-  void draw(Canvas canvas, Size size, double mouseX, double mouseY) {
+  void draw(Canvas canvas, Size size, double mouseX, double mouseY, double scrollVelocity) {
     if (z < -_fov + 10) return;
     final scale = _fov / (_fov + z);
     final parallaxX = (mouseX - 0.5) * 50 * scale;
     final parallaxY = (mouseY - 0.5) * 50 * scale;
     final px = size.width / 2 + x * scale + parallaxX;
     final py = size.height / 2 + y * scale + parallaxY;
-    if (px < -8 || px > size.width + 8 || py < -8 || py > size.height + 8) return;
+    if (px < -8 || px > size.width + 8 || py < -8 || py > size.height + 8) {
+      hasPrev = false;
+      return;
+    }
 
     final depth = (1.0 - z / _depth).clamp(0.0, 1.0);
     final twinkleVal = 0.5 + 0.5 * sin(twinkle);
     final alpha = depth * (0.4 + 0.6 * twinkleVal) * 0.92;
     final r = max(0.3, radius * scale * (0.7 + 0.3 * twinkleVal));
-
     final c = baseColor.withValues(alpha: alpha);
-    final paint = Paint()
-      ..color = c
-      ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(Offset(px, py), r, paint);
-
-    // Glow halo for bright foreground stars
-    if (depth > 0.65 && r > 1.0) {
-      canvas.drawCircle(
-        Offset(px, py),
-        r * 2.5,
-        Paint()
-          ..color = baseColor.withValues(alpha: alpha * 0.12)
-          ..style = PaintingStyle.fill,
-      );
+    // Velocity streak: when scrolling fast, foreground stars stretch into a
+    // short trail toward their previous frame position — cheap, very effective.
+    final speedFactor = (scrollVelocity.abs() * scale).clamp(0.0, 40.0);
+    if (hasPrev && speedFactor > 2.5 && depth > 0.25) {
+      final trailPaint = Paint()
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = r * 1.4
+        ..shader = ui.Gradient.linear(
+          Offset(prevScreenX, prevScreenY),
+          Offset(px, py),
+          [Colors.transparent, c],
+        );
+      canvas.drawLine(Offset(prevScreenX, prevScreenY), Offset(px, py), trailPaint);
+    } else {
+      canvas.drawCircle(Offset(px, py), r, Paint()..color = c);
+      if (depth > 0.65 && r > 1.0) {
+        canvas.drawCircle(
+          Offset(px, py),
+          r * 2.5,
+          Paint()..color = baseColor.withValues(alpha: alpha * 0.12),
+        );
+      }
     }
+
+    prevScreenX = px;
+    prevScreenY = py;
+    hasPrev = true;
   }
 }
 
@@ -457,8 +572,8 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
     with SingleTickerProviderStateMixin {
   late List<_StarParticle> _particles;
   late Ticker _ticker;
-  double _idleT = 0;
   double _lastScrollOffset = 0;
+  double _scrollVelocity = 0;
   double _mouseX = 0.5, _mouseY = 0.5;
 
   @override
@@ -470,14 +585,16 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
 
   void _onTick(Duration elapsed) {
     if (!mounted) return;
-    _idleT = elapsed.inMilliseconds / 1000.0;
-    final currentOffset = (widget.scrollController.hasClients && widget.scrollController.position.hasContentDimensions)
+    final currentOffset = (widget.scrollController.hasClients &&
+        widget.scrollController.position.hasContentDimensions)
         ? widget.scrollController.offset
         : 0.0;
     final scrollDelta = currentOffset - _lastScrollOffset;
     _lastScrollOffset = currentOffset;
+    // Smooth the velocity so streaks ease in/out instead of flickering.
+    _scrollVelocity = _scrollVelocity * 0.85 + scrollDelta * 0.15;
     for (final p in _particles) {
-      p.update(scrollDelta: scrollDelta, idleT: _idleT);
+      p.update(scrollDelta: scrollDelta);
     }
     setState(() {});
   }
@@ -501,6 +618,7 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
           particles: _particles,
           mouseX: _mouseX,
           mouseY: _mouseY,
+          scrollVelocity: _scrollVelocity,
         ),
         size: Size.infinite,
       ),
@@ -510,13 +628,18 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
 
 class _StarFieldPainter extends CustomPainter {
   final List<_StarParticle> particles;
-  final double mouseX, mouseY;
-  _StarFieldPainter({required this.particles, required this.mouseX, required this.mouseY});
+  final double mouseX, mouseY, scrollVelocity;
+  _StarFieldPainter({
+    required this.particles,
+    required this.mouseX,
+    required this.mouseY,
+    required this.scrollVelocity,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     for (final p in particles) {
-      p.draw(canvas, size, mouseX, mouseY);
+      p.draw(canvas, size, mouseX, mouseY, scrollVelocity);
     }
   }
 
@@ -524,8 +647,294 @@ class _StarFieldPainter extends CustomPainter {
   bool shouldRepaint(_StarFieldPainter old) => true;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Black hole — cinematic accretion disk with Keplerian orbiting particles,
+// asymmetric Doppler-style brightness, a lensed "far side" arc, a crisp photon
+// ring, and a soft drifting event horizon. This replaces the old flat swept
+// rings entirely.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AccretionParticle {
+  double angle;
+  double radius; // 0 (event horizon) .. 1 (outer disk edge)
+  final double baseAngularSpeed;
+  final double size;
+  final double brightnessSeed;
+
+  _AccretionParticle({required int seed})
+      : angle = Random(seed).nextDouble() * 2 * pi,
+        radius = 0.32 + Random(seed + 17).nextDouble() * 0.68,
+        baseAngularSpeed = 0.35 + Random(seed + 31).nextDouble() * 0.55,
+        size = 0.6 + Random(seed + 47).nextDouble() * 1.6,
+        brightnessSeed = Random(seed + 61).nextDouble();
+
+  void update(double dt) {
+    // Kepler-ish: inner particles orbit faster than outer ones.
+    final angularSpeed = baseAngularSpeed * (1.6 - radius);
+    angle += angularSpeed * dt;
+    if (angle > 2 * pi) angle -= 2 * pi;
+    // Slow inward spiral, respawn at the rim when consumed.
+    radius -= dt * 0.028 * (1.3 - radius);
+    if (radius < 0.18) {
+      radius = 1.0;
+      angle = Random().nextDouble() * 2 * pi;
+    }
+  }
+}
+
+class _BlackHoleEffect extends StatefulWidget {
+  final ScrollController scrollController;
+  const _BlackHoleEffect({required this.scrollController});
+
+  @override
+  State<_BlackHoleEffect> createState() => _BlackHoleEffectState();
+}
+
+class _BlackHoleEffectState extends State<_BlackHoleEffect>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  double _time = 0;
+  double _lastElapsedSeconds = 0;
+  late final List<_AccretionParticle> _particles;
+
+  @override
+  void initState() {
+    super.initState();
+    _particles = List.generate(160, (i) => _AccretionParticle(seed: i * 7919 + 13));
+    _ticker = createTicker((elapsed) {
+      if (!mounted) return;
+      final seconds = elapsed.inMicroseconds / 1e6;
+      final dt = (seconds - _lastElapsedSeconds).clamp(0.0, 0.05);
+      _lastElapsedSeconds = seconds;
+      setState(() {
+        _time = seconds;
+        for (final p in _particles) {
+          p.update(dt);
+        }
+      });
+    })..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.scrollController,
+      builder: (context, _) {
+        final hasScroll = widget.scrollController.hasClients &&
+            widget.scrollController.position.hasContentDimensions;
+        final offset = hasScroll ? widget.scrollController.offset : 0.0;
+        final maxScroll = hasScroll && widget.scrollController.position.maxScrollExtent > 0
+            ? widget.scrollController.position.maxScrollExtent
+            : 1.0;
+        final rawProgress = (offset / maxScroll).clamp(0.0, 1.0);
+        // Ease the scroll-driven drift so the hole glides rather than tracks
+        // the scroll offset linearly (which reads as mechanical / laggy).
+        final scrollProgress = _easeInOutCubic(rawProgress);
+
+        return CustomPaint(
+          painter: _BlackHolePainter(
+            time: _time,
+            scrollProgress: scrollProgress,
+            particles: _particles,
+          ),
+          size: Size.infinite,
+        );
+      },
+    );
+  }
+}
+
+class _BlackHolePainter extends CustomPainter {
+  final double time;
+  final double scrollProgress;
+  final List<_AccretionParticle> particles;
+
+  _BlackHolePainter({
+    required this.time,
+    required this.scrollProgress,
+    required this.particles,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Gentle organic bob layered on top of the scroll-driven glide so the
+    // hole never looks perfectly static between scroll events.
+    final bobX = sin(time * 0.12) * size.width * 0.012;
+    final bobY = cos(time * 0.09) * size.height * 0.01;
+
+    final centerX = size.width * 0.85 - (scrollProgress * size.width * 0.12) + bobX;
+    final centerY = size.height * 0.24 + (scrollProgress * size.height * 0.52) + bobY;
+    final center = Offset(centerX, centerY);
+
+    // Slow breathing radius instead of a hard sine snap.
+    final breathe = 0.5 + 0.5 * sin(time * 0.18);
+    final baseRadius = size.width * 0.075 + size.width * 0.018 * breathe;
+    final diskTilt = 0.34; // how flattened the disk ellipse is (perspective)
+    final rotation = time * 0.09;
+
+    // ── 1. Ambient bloom ────────────────────────────────────────────────
+    final bloomPaint = Paint()
+      ..shader = ui.Gradient.radial(
+        center,
+        baseRadius * 4.2,
+        [
+          AppColors.accent.withValues(alpha: 0.22),
+          AppColors.accentSoft.withValues(alpha: 0.08),
+          Colors.transparent,
+        ],
+        [0.0, 0.35, 1.0],
+      )
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
+    canvas.drawCircle(center, baseRadius * 4.2, bloomPaint);
+
+    // ── 2. Accretion disk particles (Keplerian orbit, Doppler-tinted) ───
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+
+    for (final p in particles) {
+      final orbitRadius = baseRadius * (1.15 + p.radius * 1.9);
+      final ex = cos(p.angle) * orbitRadius;
+      final ey = sin(p.angle) * orbitRadius * diskTilt;
+
+      // Doppler beaming: the side of the disk moving toward the viewer
+      // (here, approaching angle) reads brighter/bluer; receding side dimmer
+      // and warmer — this single trick is what makes a disk look "real".
+      final approach = (sin(p.angle) + 1) / 2; // 0..1
+      final heat = (1 - p.radius).clamp(0.0, 1.0); // hotter near the core
+      final hue = ui.lerpDouble(28, 205, (approach * 0.6 + heat * 0.4).clamp(0.0, 1.0))!;
+      final lightness = ui.lerpDouble(0.45, 0.85, approach * 0.7 + heat * 0.3)!;
+      final twinkle = 0.6 + 0.4 * sin(time * 3 + p.brightnessSeed * 20);
+      final alpha = (0.15 + 0.65 * approach) * (0.5 + 0.5 * heat) * twinkle;
+
+      final dotColor = HSLColor.fromAHSL(alpha.clamp(0.0, 0.95), hue, 0.85, lightness).toColor();
+      final dotRadius = p.size * (0.6 + heat * 0.8);
+
+      canvas.drawCircle(Offset(ex, ey), dotRadius, Paint()..color = dotColor);
+      if (heat > 0.6) {
+        canvas.drawCircle(
+          Offset(ex, ey),
+          dotRadius * 2.2,
+          Paint()..color = dotColor.withValues(alpha: dotColor.a * 0.25),
+        );
+      }
+    }
+    canvas.restore();
+
+    // ── 3. Thin structural disk rings for extra density under the particles ─
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(1.0, diskTilt);
+    for (int i = 0; i < 3; i++) {
+      final ringRadius = baseRadius * (1.3 + i * 0.55);
+      final sweepShader = ui.Gradient.sweep(
+        Offset.zero,
+        [
+          AppColors.accentWarm.withValues(alpha: 0.05),
+          AppColors.accent.withValues(alpha: 0.28),
+          AppColors.accentSecondary.withValues(alpha: 0.16),
+          AppColors.accentWarm.withValues(alpha: 0.05),
+        ],
+        const [0.0, 0.3, 0.65, 1.0],
+        TileMode.repeated,
+        rotation * (i.isEven ? 1 : -0.6),
+        rotation * (i.isEven ? 1 : -0.6) + 2 * pi,
+      );
+      canvas.drawCircle(
+        Offset.zero,
+        ringRadius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6 + i * 0.4
+          ..shader = sweepShader,
+      );
+    }
+    canvas.restore();
+
+    // ── 4. Gravitational-lensing "far side" arcs above & below the horizon ──
+    // Stylised nod to light bending around the hole so the back of the disk
+    // is visible skimming over the poles — the signature Interstellar look.
+    final lensPaintTop = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..shader = ui.Gradient.linear(
+        Offset(center.dx - baseRadius * 1.3, center.dy),
+        Offset(center.dx + baseRadius * 1.3, center.dy),
+        [
+          Colors.transparent,
+          Colors.white.withValues(alpha: 0.35),
+          AppColors.accentSoft.withValues(alpha: 0.3),
+          Colors.transparent,
+        ],
+        const [0.0, 0.4, 0.6, 1.0],
+      );
+    final lensRectTop = Rect.fromCenter(
+      center: Offset(center.dx, center.dy - baseRadius * 1.02),
+      width: baseRadius * 2.6,
+      height: baseRadius * 0.9,
+    );
+    canvas.drawArc(lensRectTop, pi, pi, false, lensPaintTop);
+
+    final lensRectBottom = Rect.fromCenter(
+      center: Offset(center.dx, center.dy + baseRadius * 1.02),
+      width: baseRadius * 2.6,
+      height: baseRadius * 0.9,
+    );
+    canvas.drawArc(lensRectBottom, 0, pi, false, lensPaintTop);
+
+    // ── 5. Photon ring — crisp bright edge right at the horizon boundary ──
+    final photonPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.6
+      ..shader = ui.Gradient.radial(
+        center,
+        baseRadius * 1.08,
+        [
+          Colors.white.withValues(alpha: 0.9),
+          AppColors.accentSoft.withValues(alpha: 0.25),
+        ],
+        const [0.88, 1.0],
+      );
+    canvas.drawCircle(center, baseRadius * 1.02, photonPaint);
+
+    // ── 6. Event horizon ─────────────────────────────────────────────────
+    canvas.drawCircle(
+      center,
+      baseRadius,
+      Paint()
+        ..color = Colors.black
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0),
+    );
+    canvas.drawCircle(
+      center,
+      baseRadius * 0.92,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          center,
+          baseRadius * 0.92,
+          [Colors.black, const Color(0xFF020408)],
+        ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BlackHolePainter old) =>
+      old.time != time || old.scrollProgress != scrollProgress;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Constellation layer — same idea as before, tuned with slightly more organic
+// drift and a touch of depth-based dimming so nodes don't look uniformly flat.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ConstellationNode {
-  late double x, y, vx, vy;
+  late double x, y, vx, vy, depth;
   final _rng = Random();
 
   _ConstellationNode() {
@@ -533,6 +942,7 @@ class _ConstellationNode {
     y = _rng.nextDouble();
     vx = (_rng.nextDouble() - 0.5) * 0.00008;
     vy = (_rng.nextDouble() - 0.5) * 0.00008;
+    depth = _rng.nextDouble();
   }
 
   void update() {
@@ -626,12 +1036,14 @@ class _ConstellationPainterFull extends CustomPainter {
 
     for (int i = 0; i < positions.length; i++) {
       final a = positions[i];
+      final depthDim = 0.5 + 0.5 * nodes[i].depth;
+
       for (int j = i + 1; j < positions.length; j++) {
         final b = positions[j];
         final dx = b.dx - a.dx, dy = b.dy - a.dy;
         final distSq = dx * dx + dy * dy;
         if (distSq <= maxDistSq) {
-          final alpha = (1 - sqrt(distSq) / maxDist) * 0.07;
+          final alpha = (1 - sqrt(distSq) / maxDist) * 0.07 * depthDim;
           linePaint.color = Color.fromRGBO(167, 139, 250, alpha);
           canvas.drawLine(a, b, linePaint);
         }
@@ -647,7 +1059,7 @@ class _ConstellationPainterFull extends CustomPainter {
         canvas.drawLine(a, Offset(mxPx, myPx), linePaint);
       }
 
-      dotPaint.color = const Color(0x28A78BFA);
+      dotPaint.color = Color.fromRGBO(167, 139, 250, 0.16 * depthDim);
       canvas.drawCircle(a, nodes[i].vx.abs() * 50000 + 0.9, dotPaint);
     }
   }
@@ -655,7 +1067,6 @@ class _ConstellationPainterFull extends CustomPainter {
   @override
   bool shouldRepaint(_ConstellationPainterFull old) => true;
 }
-
 
 class LottieSectionSeparator extends StatelessWidget {
   const LottieSectionSeparator({super.key, this.repeat = true});
@@ -673,7 +1084,6 @@ class LottieSectionSeparator extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Glowing gradient line
           Container(
             width: lineWidth,
             height: 1,
@@ -699,7 +1109,6 @@ class LottieSectionSeparator extends StatelessWidget {
               fit: BoxFit.contain,
             ),
           ),
-          // Pulsing center orb
           Container(
             width: 12,
             height: 12,
@@ -739,7 +1148,8 @@ class LottieSectionSeparator extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Interactive constellation background (for sub-widgets / cards)
+// Interactive constellation background (for sub-widgets / cards) — unchanged
+// behaviourally, kept for API compatibility with existing call sites.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class InteractiveConstellationBackground extends StatefulWidget {
@@ -750,8 +1160,7 @@ class InteractiveConstellationBackground extends StatefulWidget {
       _InteractiveConstellationBackgroundState();
 }
 
-class _InteractiveConstellationBackgroundState
-    extends State<InteractiveConstellationBackground>
+class _InteractiveConstellationBackgroundState extends State<InteractiveConstellationBackground>
     with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   late List<_StarLayer> _starLayers;
@@ -781,11 +1190,14 @@ class _InteractiveConstellationBackgroundState
 
   void _reinitializeLayersIfNeeded(Size size) {
     if ((size.width - _lastInitializedWidth).abs() < 10 && _starLayers.isNotEmpty) return;
-    _starLayers = List.generate(3, (i) => _StarLayer(
-      layerIndex: i,
-      dotCount: _calcDotCount(size.width, i),
-      random: _random,
-    ));
+    _starLayers = List.generate(
+      3,
+          (i) => _StarLayer(
+        layerIndex: i,
+        dotCount: _calcDotCount(size.width, i),
+        random: _random,
+      ),
+    );
     _lastInitializedWidth = size.width;
   }
 
@@ -817,16 +1229,18 @@ class _InteractiveConstellationBackgroundState
           child: IgnorePointer(
             child: Stack(
               children: [
-                ..._starLayers.map((layer) => Positioned.fill(
-                  child: CustomPaint(
-                    painter: _ConstellationSubPainter(
-                      dots: layer.dots,
-                      maxConnectionDistance: _calcConnectionDist(size.width, layer.layerIndex),
-                      pointerPosition: _pointerPosition,
-                      layerIndex: layer.layerIndex,
+                ..._starLayers.map(
+                      (layer) => Positioned.fill(
+                    child: CustomPaint(
+                      painter: _ConstellationSubPainter(
+                        dots: layer.dots,
+                        maxConnectionDistance: _calcConnectionDist(size.width, layer.layerIndex),
+                        pointerPosition: _pointerPosition,
+                        layerIndex: layer.layerIndex,
+                      ),
                     ),
                   ),
-                )),
+                ),
               ],
             ),
           ),
@@ -853,16 +1267,22 @@ class _StarLayer {
   final List<_Dot> dots;
 
   _StarLayer({required this.layerIndex, required int dotCount, required Random random})
-      : dots = List.generate(dotCount, (_) => _Dot(
-    x: random.nextDouble(), y: random.nextDouble(),
-    vx: (random.nextDouble() - 0.5) * 0.0001 * (layerIndex + 1),
-    vy: (random.nextDouble() - 0.5) * 0.0001 * (layerIndex + 1),
-    radius: random.nextDouble() * (1 + layerIndex) + 0.9,
-  ));
+      : dots = List.generate(
+    dotCount,
+        (_) => _Dot(
+      x: random.nextDouble(),
+      y: random.nextDouble(),
+      vx: (random.nextDouble() - 0.5) * 0.0001 * (layerIndex + 1),
+      vy: (random.nextDouble() - 0.5) * 0.0001 * (layerIndex + 1),
+      radius: random.nextDouble() * (1 + layerIndex) + 0.9,
+    ),
+  );
 
-  void updatePositions() { for (final d in dots) {
-    d.updatePosition();
-  } }
+  void updatePositions() {
+    for (final d in dots) {
+      d.updatePosition();
+    }
+  }
 }
 
 double _calcConnectionDist(double width, int layerIndex) =>
@@ -884,20 +1304,24 @@ class _ConstellationSubPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final parallaxFactor = 0.05 * (layerIndex + 1);
-    final px = Offset((pointerPosition.dx - 0.5) * parallaxFactor,
-        (pointerPosition.dy - 0.5) * parallaxFactor);
+    final px = Offset(
+      (pointerPosition.dx - 0.5) * parallaxFactor,
+      (pointerPosition.dy - 0.5) * parallaxFactor,
+    );
     final dotPaint = Paint()..style = PaintingStyle.fill;
     final linePaint = Paint()..strokeWidth = 0.8;
     final maxDistSq = maxConnectionDistance * maxConnectionDistance;
 
-    final positions = dots.map((d) => Offset(
+    final positions = dots
+        .map((d) => Offset(
       (d.x + px.dx) * size.width,
       (d.y + px.dy) * size.height,
-    )).toList();
+    ))
+        .toList();
 
     for (int i = 0; i < positions.length; i++) {
-      dotPaint.color = AppColors.textSecondary.withValues(
-          alpha: (0.7 - layerIndex * 0.18).clamp(0.15, 0.7));
+      dotPaint.color =
+          AppColors.textSecondary.withValues(alpha: (0.7 - layerIndex * 0.18).clamp(0.15, 0.7));
       canvas.drawCircle(positions[i], dots[i].radius, dotPaint);
     }
 

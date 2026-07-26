@@ -35,8 +35,7 @@ class MyApp extends StatelessWidget {
           displayColor: AppColors.textPrimary,
         ),
       ),
-      builder: (context, child) =>
-          _AppCursorShell(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => _AppCursorShell(child: child ?? const SizedBox.shrink()),
       home: const SplashScreen(),
     );
   }
@@ -51,8 +50,7 @@ class _AppCursorShell extends StatefulWidget {
   State<_AppCursorShell> createState() => _AppCursorShellState();
 }
 
-class _AppCursorShellState extends State<_AppCursorShell>
-    with SingleTickerProviderStateMixin {
+class _AppCursorShellState extends State<_AppCursorShell> with SingleTickerProviderStateMixin {
   late final AnimationController _followController;
   Offset _pointer = const Offset(-100, -100);
   Offset _trail = const Offset(-100, -100);
@@ -63,9 +61,9 @@ class _AppCursorShellState extends State<_AppCursorShell>
     if (kIsWeb) return true;
     return switch (defaultTargetPlatform) {
       TargetPlatform.windows => true,
-      TargetPlatform.macOS   => true,
-      TargetPlatform.linux   => true,
-      _                      => false,
+      TargetPlatform.macOS => true,
+      TargetPlatform.linux => true,
+      _ => false,
     };
   }
 
@@ -78,8 +76,7 @@ class _AppCursorShellState extends State<_AppCursorShell>
     )
       ..addListener(() {
         if (!_visible || _trail == _pointer) return;
-        setState(
-                () => _trail = Offset.lerp(_trail, _pointer, 0.18) ?? _pointer);
+        setState(() => _trail = Offset.lerp(_trail, _pointer, 0.18) ?? _pointer);
       })
       ..repeat();
   }
@@ -90,8 +87,7 @@ class _AppCursorShellState extends State<_AppCursorShell>
     super.dispose();
   }
 
-  void _updatePointer(PointerEvent e) =>
-      setState(() => _pointer = e.position);
+  void _updatePointer(PointerEvent e) => setState(() => _pointer = e.position);
 
   @override
   Widget build(BuildContext context) {
@@ -128,24 +124,20 @@ class _AppCursorShellState extends State<_AppCursorShell>
                         curve: Curves.easeOutBack,
                         child: ClipOval(
                           child: BackdropFilter(
-                            filter:
-                            ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+                            filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
                             child: Container(
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.accentSoft
-                                    .withValues(alpha: 0.05),
+                                color: AppColors.accentSoft.withValues(alpha: 0.05),
                                 border: Border.all(
-                                  color: AppColors.accentSoft.withValues(
-                                      alpha: _pressed ? 0.6 : 0.42),
+                                  color: AppColors.accentSoft.withValues(alpha: _pressed ? 0.6 : 0.42),
                                   width: _pressed ? 2.0 : 1.2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.accentSoft
-                                        .withValues(alpha: 0.16),
+                                    color: AppColors.accentSoft.withValues(alpha: 0.16),
                                     blurRadius: 16,
                                     spreadRadius: 2,
                                   ),
@@ -170,8 +162,7 @@ class _AppCursorShellState extends State<_AppCursorShell>
                             gradient: AppColors.accentGradientStrong,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent.withValues(
-                                    alpha: _pressed ? 0.8 : 0.38),
+                                color: AppColors.accent.withValues(alpha: _pressed ? 0.8 : 0.38),
                                 blurRadius: _pressed ? 12 : 18,
                                 spreadRadius: 2,
                               ),
@@ -192,6 +183,11 @@ class _AppCursorShellState extends State<_AppCursorShell>
 }
 
 // ── Splash screen ─────────────────────────────────────────────────────────────
+// The whole point of this rewrite: the splash should feel like the opening
+// shot of the SAME scene the home page lives in (deep space, nebula, a
+// singularity), not a separate branded loading screen that gets swapped out.
+// So the background here reuses the same visual language as HomePage's cosmic
+// layers, and the transition crossfades + zooms rather than hard-cutting.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -199,14 +195,17 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late final AnimationController _intro;
-  late final AnimationController _orb;
+  late final AnimationController _cosmos; // drives nebula/starfield/singularity time
   late final AnimationController _progress;
+  late final AnimationController _outro; // fades foreground content before nav
 
-  static const _splashDelay      = Duration(milliseconds: 3600);
-  static const _transitionLength = Duration(milliseconds: 900);
+  bool _leaving = false;
+
+  static const _contentReadyDelay = Duration(milliseconds: 3200);
+  static const _outroLength = Duration(milliseconds: 650);
+  static const _transitionLength = Duration(milliseconds: 1100);
 
   @override
   void initState() {
@@ -216,9 +215,9 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 1200),
     )..forward();
 
-    _orb = AnimationController(
+    _cosmos = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 14),
+      duration: const Duration(seconds: 60),
     )..repeat();
 
     _progress = AnimationController(
@@ -226,19 +225,29 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2800),
     )..forward();
 
-    Future.delayed(_splashDelay, () {
+    _outro = AnimationController(vsync: this, duration: _outroLength);
+
+    Future.delayed(_contentReadyDelay, () async {
       if (!mounted) return;
+      // 1. Fade the foreground UI out first — the cosmic background keeps
+      //    running underneath, so nothing just vanishes.
+      setState(() => _leaving = true);
+      await _outro.forward();
+      if (!mounted) return;
+
+      // 2. Only now hand off to HomePage, with a transition that continues
+      //    the same motion language (fade + gentle push-in) instead of an
+      //    instant swap.
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, _, _) => const HomePage(),
-          transitionsBuilder: (_, anim, _, child) {
-            final curved = CurvedAnimation(
-                parent: anim, curve: Curves.easeOutQuart);
+          pageBuilder: (_, __, ___) => const HomePage(),
+          transitionsBuilder: (_, animation, __, child) {
+            final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
             return FadeTransition(
               opacity: curved,
               child: ScaleTransition(
-                scale: Tween(begin: 1.04, end: 1.0).animate(curved),
+                scale: Tween(begin: 1.05, end: 1.0).animate(curved),
                 child: child,
               ),
             );
@@ -252,82 +261,195 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _intro.dispose();
-    _orb.dispose();
+    _cosmos.dispose();
     _progress.dispose();
+    _outro.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isWide =
-        MediaQuery.of(context).size.width >= kMinDesktopWidth;
+    final isWide = MediaQuery.of(context).size.width >= kMinDesktopWidth;
 
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Layer 1 — static dot grid + gradient
-          RepaintBoundary(
-            child: CustomPaint(painter: const _StaticBackgroundPainter()),
-          ),
+          // Layer 1 — deep space wash (same tone as HomePage's background)
+          const _DeepSpaceWashSplash(),
 
-          // Layer 2 — animated ambient orbs
-          RepaintBoundary(
-            child: AnimatedBuilder(
-              animation: _orb,
-              builder: (_, _) => CustomPaint(
-                painter: _AnimatedOrbPainter(progress: _orb.value),
-              ),
+          // Layer 2 — drifting nebula fields
+          AnimatedBuilder(
+            animation: _cosmos,
+            builder: (_, __) => CustomPaint(
+              painter: _SplashNebulaPainter(t: _cosmos.value * 60),
             ),
           ),
 
-          // Layer 3 — very subtle lottie texture behind everything
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.10,
-                child: Lottie.asset(
-                  'assets/animations/splash_bg.json',
-                  fit: BoxFit.cover,
-                  repeat: true,
-                ),
-              ),
+          // Layer 3 — starfield
+          AnimatedBuilder(
+            animation: _cosmos,
+            builder: (_, __) => CustomPaint(
+              painter: _SplashStarfieldPainter(t: _cosmos.value * 60, seed: 7),
             ),
           ),
 
-          // Layer 4 — vignette
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.topCenter,
-                  radius: 1.3,
-                  colors: [
-                    AppColors.accentSoft.withValues(alpha: 0.10),
-                    Colors.transparent,
-                    AppColors.background.withValues(alpha: 0.85),
-                  ],
-                  stops: const [0.0, 0.4, 1.0],
-                ),
-              ),
-            ),
-          ),
+          // Layer 4 — vignette so text stays legible over the stars
+          const Positioned.fill(child: _SplashVignette()),
 
-          // Layer 5 — content
-          isWide
-              ? _WideContent(intro: _intro, progress: _progress)
-              : _NarrowContent(intro: _intro, progress: _progress),
+          // Layer 5 — the actual content, fading out smoothly before nav
+          AnimatedBuilder(
+            animation: _outro,
+            builder: (_, child) {
+              final fade = 1.0 - Curves.easeIn.transform(_outro.value);
+              final lift = _outro.value * 18;
+              return Opacity(
+                opacity: fade,
+                child: Transform.translate(offset: Offset(0, -lift), child: child),
+              );
+            },
+            child: isWide
+                ? _WideContent(intro: _intro, progress: _progress, cosmos: _cosmos)
+                : _NarrowContent(intro: _intro, progress: _progress, cosmos: _cosmos),
+          ),
         ],
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared cosmic background pieces (deliberately mirrors HomePage's tone so the
+// splash reads as "the same universe, zoomed in" rather than a separate app).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DeepSpaceWashSplash extends StatelessWidget {
+  const _DeepSpaceWashSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: const Alignment(0.3, -0.4),
+          radius: 1.4,
+          colors: [
+            Color.lerp(AppColors.background, const Color(0xFF120B24), 0.55)!,
+            AppColors.background,
+            const Color(0xFF05050A),
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+      ),
+    );
+  }
+}
+
+class _SplashVignette extends StatelessWidget {
+  const _SplashVignette();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: 1.25,
+          colors: [
+            Colors.transparent,
+            AppColors.background.withValues(alpha: 0.55),
+          ],
+          stops: const [0.45, 1.0],
+        ),
+      ),
+    );
+  }
+}
+
+class _SplashNebulaPainter extends CustomPainter {
+  final double t;
+  _SplashNebulaPainter({required this.t});
+
+  void _blob(Canvas canvas, Size size, Offset center, double radius, double hue, double alpha) {
+    final shader = RadialGradient(
+      colors: [
+        HSLColor.fromAHSL(alpha, hue, 0.68, 0.34).toColor(),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 1.0],
+    ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..shader = shader);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final hue1 = 258.0 + sin(t * 0.12) * 18;
+    final alpha1 = 0.07 + sin(t * 0.18) * 0.018;
+    final c1 = Offset(size.width * (0.28 + sin(t * 0.05) * 0.06), size.height * (0.32 + cos(t * 0.07) * 0.05));
+    _blob(canvas, size, c1, size.width * 0.6, hue1, alpha1);
+
+    final hue2 = 198.0 + cos(t * 0.09) * 14;
+    final alpha2 = 0.05 + cos(t * 0.15) * 0.014;
+    final c2 = Offset(size.width * (0.78 + cos(t * 0.04) * 0.05), size.height * (0.68 + sin(t * 0.06) * 0.05));
+    _blob(canvas, size, c2, size.width * 0.5, hue2, alpha2);
+  }
+
+  @override
+  bool shouldRepaint(_SplashNebulaPainter old) => old.t != t;
+}
+
+class _SplashStar {
+  final double x, y, radius, twinkleSpeed, phase;
+  final Color color;
+  _SplashStar(Random rng)
+      : x = rng.nextDouble(),
+        y = rng.nextDouble(),
+        radius = 0.5 + rng.nextDouble() * 1.6,
+        twinkleSpeed = 0.4 + rng.nextDouble() * 0.8,
+        phase = rng.nextDouble() * 2 * pi,
+        color = [
+          const Color(0xFF6C63FF),
+          const Color(0xFF06B6D4),
+          const Color(0xFFA78BFA),
+          Colors.white,
+        ][rng.nextInt(4)];
+}
+
+class _SplashStarfieldPainter extends CustomPainter {
+  final double t;
+  final int seed;
+  static final Map<int, List<_SplashStar>> _cache = {};
+
+  _SplashStarfieldPainter({required this.t, required this.seed});
+
+  List<_SplashStar> _starsFor(int count) {
+    return _cache.putIfAbsent(seed, () {
+      final rng = Random(seed);
+      return List.generate(count, (_) => _SplashStar(rng));
+    });
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stars = _starsFor(220);
+    for (final s in stars) {
+      final twinkle = 0.5 + 0.5 * sin(t * s.twinkleSpeed + s.phase);
+      final alpha = (0.25 + 0.55 * twinkle).clamp(0.0, 1.0);
+      final p = Offset(s.x * size.width, s.y * size.height);
+      canvas.drawCircle(p, s.radius, Paint()..color = s.color.withValues(alpha: alpha));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SplashStarfieldPainter old) => old.t != t;
+}
+
 // ── Wide layout ───────────────────────────────────────────────────────────────
 class _WideContent extends StatelessWidget {
-  const _WideContent({required this.intro, required this.progress});
+  const _WideContent({required this.intro, required this.progress, required this.cosmos});
   final AnimationController intro;
   final AnimationController progress;
+  final AnimationController cosmos;
 
   @override
   Widget build(BuildContext context) {
@@ -336,17 +458,9 @@ class _WideContent extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: statement
-          Expanded(
-            flex: 5,
-            child: _LeftStatement(intro: intro, progress: progress),
-          ),
+          Expanded(flex: 5, child: _LeftStatement(intro: intro, progress: progress)),
           const SizedBox(width: 56),
-          // Right: lottie hero + radar + log
-          Expanded(
-            flex: 5,
-            child: _RightVisual(intro: intro, progress: progress),
-          ),
+          Expanded(flex: 5, child: _RightVisual(intro: intro, progress: progress, cosmos: cosmos)),
         ],
       ),
     );
@@ -355,9 +469,10 @@ class _WideContent extends StatelessWidget {
 
 // ── Narrow layout ─────────────────────────────────────────────────────────────
 class _NarrowContent extends StatelessWidget {
-  const _NarrowContent({required this.intro, required this.progress});
+  const _NarrowContent({required this.intro, required this.progress, required this.cosmos});
   final AnimationController intro;
   final AnimationController progress;
+  final AnimationController cosmos;
 
   @override
   Widget build(BuildContext context) {
@@ -367,7 +482,7 @@ class _NarrowContent extends StatelessWidget {
         children: [
           _LeftStatement(intro: intro, progress: progress, centered: true),
           const SizedBox(height: 40),
-          _RightVisual(intro: intro, progress: progress, compact: true),
+          _RightVisual(intro: intro, progress: progress, cosmos: cosmos, compact: true),
         ],
       ),
     );
@@ -401,20 +516,16 @@ class _LeftStatement extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final align =
-    centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final align = centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
     final textAlign = centered ? TextAlign.center : TextAlign.start;
 
     return Column(
       crossAxisAlignment: align,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Eyebrow — name + availability
         _stagger(
           Row(
-            mainAxisAlignment: centered
-                ? MainAxisAlignment.center
-                : MainAxisAlignment.start,
+            mainAxisAlignment: centered ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
               Container(
                 width: 7,
@@ -445,10 +556,7 @@ class _LeftStatement extends StatelessWidget {
           ),
           0.0,
         ),
-
         const SizedBox(height: 24),
-
-        // Headline — big, tight, three lines
         _stagger(
           Text(
             'Computer vision\n& AI systems\nthat ship.',
@@ -464,10 +572,7 @@ class _LeftStatement extends StatelessWidget {
           0.07,
           slide: const Offset(0, 0.08),
         ),
-
         const SizedBox(height: 22),
-
-        // Subline
         _stagger(
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
@@ -484,22 +589,10 @@ class _LeftStatement extends StatelessWidget {
           ),
           0.16,
         ),
-
         const SizedBox(height: 32),
-
-        // Terminal log — kept, but refined
-        _stagger(
-          _TerminalLog(progress: progress),
-          0.26,
-        ),
-
+        _stagger(_TerminalLog(progress: progress), 0.26),
         const SizedBox(height: 28),
-
-        // Progress bar
-        _stagger(
-          _ProgressBar(progress: progress, centered: centered),
-          0.38,
-        ),
+        _stagger(_ProgressBar(progress: progress, centered: centered), 0.38),
       ],
     );
   }
@@ -511,12 +604,12 @@ class _TerminalLog extends StatelessWidget {
   final AnimationController progress;
 
   static const _logs = [
-    ('[Vision]',  'Initializing perception graph'),
-    ('[Models]',  'Loading inference nodes'),
-    ('[ROS]',     'Linking robot channels'),
-    ('[APIs]',    'Securing transport layer'),
-    ('[UI]',      'Rendering interactive shell'),
-    ('[Ready]',   'Portfolio system online'),
+    ('[Vision]', 'Initializing perception graph'),
+    ('[Models]', 'Loading inference nodes'),
+    ('[ROS]', 'Linking robot channels'),
+    ('[APIs]', 'Securing transport layer'),
+    ('[UI]', 'Rendering interactive shell'),
+    ('[Ready]', 'Portfolio system online'),
   ];
 
   @override
@@ -526,14 +619,11 @@ class _TerminalLog extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.30),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Terminal title bar
           Row(
             children: [
               _dot(const Color(0xFFFF5F56)),
@@ -544,18 +634,14 @@ class _TerminalLog extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 'boot.sh',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textMuted,
-                  fontFamily: 'monospace',
-                ),
+                style: TextStyle(fontSize: 10, color: AppColors.textMuted, fontFamily: 'monospace'),
               ),
             ],
           ),
           const SizedBox(height: 10),
           AnimatedBuilder(
             animation: progress,
-            builder: (_, _) {
+            builder: (_, __) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: _logs.asMap().entries.map((e) {
@@ -572,9 +658,7 @@ class _TerminalLog extends StatelessWidget {
                         Text(
                           isLast ? '✓ ' : '› ',
                           style: TextStyle(
-                            color: isLast
-                                ? const Color(0xFF22C55E)
-                                : AppColors.accent,
+                            color: isLast ? const Color(0xFF22C55E) : AppColors.accent,
                             fontFamily: 'monospace',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -583,9 +667,7 @@ class _TerminalLog extends StatelessWidget {
                         Text(
                           entry.$1,
                           style: TextStyle(
-                            color: isLast
-                                ? const Color(0xFF22C55E)
-                                : AppColors.accent.withValues(alpha: 0.7),
+                            color: isLast ? const Color(0xFF22C55E) : AppColors.accent.withValues(alpha: 0.7),
                             fontFamily: 'monospace',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -597,8 +679,7 @@ class _TerminalLog extends StatelessWidget {
                             entry.$2,
                             style: TextStyle(
                               color: isLast
-                                  ? const Color(0xFF22C55E)
-                                  .withValues(alpha: 0.8)
+                                  ? const Color(0xFF22C55E).withValues(alpha: 0.8)
                                   : AppColors.textMuted,
                               fontFamily: 'monospace',
                               fontSize: 11,
@@ -620,8 +701,7 @@ class _TerminalLog extends StatelessWidget {
   Widget _dot(Color color) => Container(
     width: 9,
     height: 9,
-    decoration:
-    BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.7)),
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.7)),
   );
 }
 
@@ -635,26 +715,15 @@ class _ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: progress,
-      builder: (_, _) {
+      builder: (_, __) {
         final pct = (progress.value * 100).round();
         return Column(
-          crossAxisAlignment: centered
-              ? CrossAxisAlignment.center
-              : CrossAxisAlignment.start,
+          crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: centered
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.start,
+              mainAxisAlignment: centered ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
-                Text(
-                  'Loading',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                    fontFamily: 'monospace',
-                  ),
-                ),
+                Text('Loading', style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontFamily: 'monospace')),
                 const SizedBox(width: 8),
                 Text(
                   '$pct%',
@@ -675,10 +744,7 @@ class _ProgressBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(1),
                 child: Stack(
                   children: [
-                    Container(
-                      color:
-                      AppColors.borderStrong.withValues(alpha: 0.25),
-                    ),
+                    Container(color: AppColors.borderStrong.withValues(alpha: 0.25)),
                     FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: progress.value,
@@ -686,11 +752,7 @@ class _ProgressBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: AppColors.accentGradientStrong,
                           boxShadow: [
-                            BoxShadow(
-                              color:
-                              AppColors.accent.withValues(alpha: 0.5),
-                              blurRadius: 6,
-                            ),
+                            BoxShadow(color: AppColors.accent.withValues(alpha: 0.5), blurRadius: 6),
                           ],
                         ),
                       ),
@@ -706,79 +768,72 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-// ── Right: lottie hero + radar underlay + signal chips ────────────────────────
+// ── Right: lottie hero + singularity loader + signal chips ────────────────────
+// The radar sweep from the old version had nothing to do with the rest of the
+// site. This replaces it with a small orbiting "singularity" — a miniature,
+// friendlier preview of the black hole that anchors HomePage — so by the time
+// the user lands on the real page, they've already seen its visual signature.
 class _RightVisual extends StatelessWidget {
   const _RightVisual({
     required this.intro,
     required this.progress,
+    required this.cosmos,
     this.compact = false,
   });
   final AnimationController intro;
   final AnimationController progress;
+  final AnimationController cosmos;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final anim = CurvedAnimation(
-      parent: intro,
-      curve: const Interval(0.12, 1.0, curve: Curves.easeOutCubic),
-    );
-
+    final anim = CurvedAnimation(parent: intro, curve: const Interval(0.12, 1.0, curve: Curves.easeOutCubic));
     final lottieSz = compact ? 240.0 : 340.0;
 
     return FadeTransition(
       opacity: anim,
       child: SlideTransition(
-        position: Tween(begin: const Offset(0.05, 0), end: Offset.zero)
-            .animate(anim),
+        position: Tween(begin: const Offset(0.05, 0), end: Offset.zero).animate(anim),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Main visual: radar behind, lottie in front ──────────────
             SizedBox(
               height: lottieSz,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Full-size radar
                   Positioned.fill(
                     child: AnimatedBuilder(
-                      animation: progress,
-                      builder: (_, _) => CustomPaint(
-                        painter: _RadarPainter(progress: progress.value),
+                      animation: cosmos,
+                      builder: (_, __) => CustomPaint(
+                        painter: _SingularityLoaderPainter(t: cosmos.value * 60),
                       ),
                     ),
                   ),
-
-                  // Waving hand lottie — centred, generous size
-                  SizedBox(
-                    width: lottieSz * 0.72,
-                    height: lottieSz * 0.72,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => AppColors
-                          .accentGradientStrong
-                          .createShader(bounds),
-                      blendMode: BlendMode.modulate,
-                      child: Lottie.asset(
-                        'assets/animations/waving_hand.json',
-                        repeat: true,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-
-                  // Floating orbital nodes
+                  // SizedBox(
+                  //   width: lottieSz * 0.5,
+                  //   height: lottieSz * 0.5,
+                  //   child: ShaderMask(
+                  //     shaderCallback: (bounds) => AppColors.accentGradientStrong.createShader(bounds),
+                  //     blendMode: BlendMode.modulate,
+                  //     // child: Lottie.asset(
+                  //     //   'assets/animations/waving_hand.json',
+                  //     //   repeat: true,
+                  //     //   fit: BoxFit.contain,
+                  //     // ),
+                  //   ),
+                  // ),
                   AnimatedBuilder(
                     animation: progress,
-                    builder: (_, _) {
+                    builder: (_, __) {
                       final a = progress.value * 2 * pi;
-                      final r = lottieSz * 0.42;
+                      final r = lottieSz * 0.44;
                       return Stack(
                         alignment: Alignment.center,
                         children: [
-                          _floatNode('Vision',   a,         r),
-                          _floatNode('Models',   a + 2.09,  r),
-                          _floatNode('ROS',      a + 4.19,  r),
+                          _floatNode('Vision', a, r),
+                          _floatNode('Models', a + 2.09, r),
+                          _floatNode('ROS', a + 4.19, r),
                         ],
                       );
                     },
@@ -786,11 +841,8 @@ class _RightVisual extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // ── Status row ────────────────────────────────────────────────
-            _StatusRow(),
+            const _StatusRow(),
           ],
         ),
       ),
@@ -816,15 +868,8 @@ class _OrbitalChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.28),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.10),
-            blurRadius: 10,
-          ),
-        ],
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+        boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.10), blurRadius: 10)],
       ),
       child: Text(
         label,
@@ -841,10 +886,12 @@ class _OrbitalChip extends StatelessWidget {
 
 // ── Status row below visual ───────────────────────────────────────────────────
 class _StatusRow extends StatelessWidget {
+  const _StatusRow();
+
   @override
   Widget build(BuildContext context) {
     const items = [
-      ('MODE',  'VISION'),
+      ('MODE', 'VISION'),
       ('STACK', 'ROS · ML'),
       ('STATE', 'LIVE'),
     ];
@@ -897,165 +944,86 @@ class _StatusRow extends StatelessWidget {
   }
 }
 
-// ── Radar painter ─────────────────────────────────────────────────────────────
-class _RadarPainter extends CustomPainter {
-  const _RadarPainter({required this.progress});
-  final double progress;
+// ── Singularity loader painter ────────────────────────────────────────────────
+// A compact preview of the black hole from HomePage: a slow-rotating,
+// Doppler-tinted accretion ring around a soft dark core with a subtle photon
+// edge. Small, calm, and thematically identical to what's coming next.
+class _SingularityLoaderPainter extends CustomPainter {
+  final double t;
+  _SingularityLoaderPainter({required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final maxR   = min(size.width, size.height) * 0.46;
+    final maxR = min(size.width, size.height) * 0.46;
+    final coreR = maxR * 0.34;
+    final rotation = t * 0.5;
 
-    // Concentric rings
-    for (int i = 1; i <= 4; i++) {
-      canvas.drawCircle(
-        center,
-        maxR * i / 4,
-        Paint()
-          ..style      = PaintingStyle.stroke
-          ..strokeWidth = 0.8
-          ..color      = AppColors.accent.withValues(alpha: 0.05 + i * 0.02),
-      );
-    }
-
-    // Cross hairs
-    final cross = Paint()
-      ..color      = AppColors.accent.withValues(alpha: 0.06)
-      ..strokeWidth = 0.8;
-    canvas.drawLine(Offset(center.dx, center.dy - maxR),
-        Offset(center.dx, center.dy + maxR), cross);
-    canvas.drawLine(Offset(center.dx - maxR, center.dy),
-        Offset(center.dx + maxR, center.dy), cross);
-
-    // Sweep
-    final sweepAngle = -pi / 2 + progress * 2 * pi;
-    const wedge = pi * 0.5;
-    final rect = Rect.fromCircle(center: center, radius: maxR);
-
-    canvas.drawArc(
-      rect,
-      sweepAngle - wedge,
-      wedge,
-      true,
-      Paint()
-        ..shader = SweepGradient(
-          center: Alignment.center,
-          startAngle: sweepAngle - wedge,
-          endAngle: sweepAngle,
-          colors: [
-            Colors.transparent,
-            AppColors.accent.withValues(alpha: 0.0),
-            AppColors.accent.withValues(alpha: 0.14),
-          ],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(rect)
-        ..style = PaintingStyle.fill,
-    );
-
-    // Leading edge
-    canvas.drawLine(
+    // Ambient bloom
+    canvas.drawCircle(
       center,
-      Offset(center.dx + cos(sweepAngle) * maxR,
-          center.dy + sin(sweepAngle) * maxR),
-      Paint()
-        ..color      = AppColors.accent.withValues(alpha: 0.45)
-        ..strokeWidth = 1.2,
-    );
-
-    // Blips
-    final blips = [
-      (0.22, 0.30 * pi),
-      (0.48, 1.05 * pi),
-      (0.68, -0.15 * pi),
-      (0.85, 0.78 * pi),
-    ];
-    for (final b in blips) {
-      if (progress < b.$1) continue;
-      final fade = ((progress - b.$1) * 8).clamp(0.0, 1.0);
-      final bOff = Offset(
-        center.dx + cos(b.$2) * maxR * b.$1,
-        center.dy + sin(b.$2) * maxR * b.$1,
-      );
-      canvas.drawCircle(bOff, 5 * (1 - fade * 0.4),
-          Paint()..color = AppColors.accent.withValues(alpha: 0.10 * fade));
-      canvas.drawCircle(bOff, 2.5,
-          Paint()..color = AppColors.accent.withValues(alpha: 0.9 * fade));
-    }
-
-    // Centre
-    canvas.drawCircle(center, 3,
-        Paint()..color = AppColors.accent);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RadarPainter old) =>
-      old.progress != progress;
-}
-
-// ── Static background ─────────────────────────────────────────────────────────
-class _StaticBackgroundPainter extends CustomPainter {
-  const _StaticBackgroundPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: [AppColors.background, AppColors.backgroundElevated],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
-    );
-    final dot = Paint()
-      ..color = AppColors.border.withValues(alpha: 0.16)
-      ..style = PaintingStyle.fill;
-    const gap = 44.0;
-    for (double x = 0; x <= size.width; x += gap) {
-      for (double y = 0; y <= size.height; y += gap) {
-        canvas.drawCircle(Offset(x, y), 0.9, dot);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _StaticBackgroundPainter _) => false;
-}
-
-// ── Animated orb painter ──────────────────────────────────────────────────────
-class _AnimatedOrbPainter extends CustomPainter {
-  const _AnimatedOrbPainter({required this.progress});
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    _orb(canvas,
-        Offset(size.width * (0.18 + sin(progress * 2 * pi) * 0.05),
-            size.height * (0.22 + cos(progress * 2 * pi) * 0.04)),
-        size.shortestSide * 0.52,
-        AppColors.accentSoft,
-        0.20);
-
-    _orb(canvas,
-        Offset(size.width * 0.86, size.height * 0.76),
-        size.shortestSide * 0.38,
-        AppColors.accentSecondary,
-        0.13);
-  }
-
-  void _orb(Canvas c, Offset center, double r, Color color, double alpha) {
-    c.drawCircle(
-      center,
-      r,
+      maxR,
       Paint()
         ..shader = RadialGradient(
-          colors: [color.withValues(alpha: alpha), Colors.transparent],
-        ).createShader(Rect.fromCircle(center: center, radius: r)),
+          colors: [
+            AppColors.accent.withValues(alpha: 0.16),
+            Colors.transparent,
+          ],
+          stops: const [0.3, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: maxR))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
     );
+
+    // Disk ring — asymmetric brightness for a touch of Doppler beaming
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    canvas.scale(1.0, 0.4);
+    final ringPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.4
+      ..shader = SweepGradient(
+        colors: [
+          AppColors.accentWarm.withValues(alpha: 0.15),
+          AppColors.accent.withValues(alpha: 0.85),
+          AppColors.accentSecondary.withValues(alpha: 0.35),
+          AppColors.accentWarm.withValues(alpha: 0.15),
+        ],
+        stops: const [0.0, 0.3, 0.65, 1.0],
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: maxR * 0.86));
+    canvas.drawCircle(Offset.zero, maxR * 0.86, ringPaint);
+    canvas.restore();
+
+    // Photon ring
+    canvas.drawCircle(
+      center,
+      coreR * 1.12,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..color = Colors.white.withValues(alpha: 0.7),
+    );
+
+    // Core
+    canvas.drawCircle(
+      center,
+      coreR,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [const Color(0xFF020408), Colors.black],
+        ).createShader(Rect.fromCircle(center: center, radius: coreR)),
+    );
+
+    // A handful of orbiting embers for life
+    for (int i = 0; i < 5; i++) {
+      final a = rotation * (1.4 + i * 0.15) + i * (2 * pi / 5);
+      final r = maxR * (0.58 + 0.28 * ((i % 3) / 2));
+      final p = Offset(center.dx + cos(a) * r, center.dy + sin(a) * r * 0.4);
+      final twinkle = 0.5 + 0.5 * sin(t * 2 + i);
+      canvas.drawCircle(p, 1.6 + twinkle, Paint()..color = AppColors.accentSoft.withValues(alpha: 0.5 + 0.4 * twinkle));
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _AnimatedOrbPainter old) =>
-      old.progress != progress;
+  bool shouldRepaint(covariant _SingularityLoaderPainter old) => old.t != t;
 }
