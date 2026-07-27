@@ -18,6 +18,7 @@ import 'package:portfolio/widgets/header_mobile.dart';
 import 'package:portfolio/widgets/main.dart';
 import 'package:portfolio/widgets/project.dart';
 import 'package:portfolio/widgets/skill.dart';
+import 'package:portfolio/widgets/black_hole_orb.dart';
 
 // A single small easing helper used across painters so all motion in the
 // scene shares the same "weight" — this is most of what makes hand-rolled
@@ -144,8 +145,13 @@ class _HomePageState extends State<HomePage> {
               ),
 
               // ── Cinematic black hole layer ──
+              // This is the same Hero-tagged BlackHoleOrb the splash screen
+              // shows — the route transition flies/resizes it directly from
+              // its splash position into whatever position this layer
+              // computes for scroll offset 0, so the two screens read as one
+              // continuous scene rather than a hard cut between two paintings.
               Positioned.fill(
-                child: _BlackHoleEffect(scrollController: scrollController),
+                child: _HomeBlackHoleLayer(scrollController: scrollController),
               ),
 
               Positioned.fill(
@@ -648,70 +654,32 @@ class _StarFieldPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Black hole — cinematic accretion disk with Keplerian orbiting particles,
-// asymmetric Doppler-style brightness, a lensed "far side" arc, a crisp photon
-// ring, and a soft drifting event horizon. This replaces the old flat swept
-// rings entirely.
+// Black hole — now just a positioning shell around the shared, Hero-tagged
+// BlackHoleOrb widget (see widgets/black_hole_orb.dart). All the accretion
+// disk / lensing / photon-ring painting lives there so the exact same widget
+// can be flown in from the splash screen. This shell's only job is deciding
+// where that orb sits and how big it is as the page scrolls.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _AccretionParticle {
-  double angle;
-  double radius; // 0 (event horizon) .. 1 (outer disk edge)
-  final double baseAngularSpeed;
-  final double size;
-  final double brightnessSeed;
-
-  _AccretionParticle({required int seed})
-      : angle = Random(seed).nextDouble() * 2 * pi,
-        radius = 0.32 + Random(seed + 17).nextDouble() * 0.68,
-        baseAngularSpeed = 0.35 + Random(seed + 31).nextDouble() * 0.55,
-        size = 0.6 + Random(seed + 47).nextDouble() * 1.6,
-        brightnessSeed = Random(seed + 61).nextDouble();
-
-  void update(double dt) {
-    // Kepler-ish: inner particles orbit faster than outer ones.
-    final angularSpeed = baseAngularSpeed * (1.6 - radius);
-    angle += angularSpeed * dt;
-    if (angle > 2 * pi) angle -= 2 * pi;
-    // Slow inward spiral, respawn at the rim when consumed.
-    radius -= dt * 0.028 * (1.3 - radius);
-    if (radius < 0.18) {
-      radius = 1.0;
-      angle = Random().nextDouble() * 2 * pi;
-    }
-  }
-}
-
-class _BlackHoleEffect extends StatefulWidget {
+class _HomeBlackHoleLayer extends StatefulWidget {
   final ScrollController scrollController;
-  const _BlackHoleEffect({required this.scrollController});
+  const _HomeBlackHoleLayer({required this.scrollController});
 
   @override
-  State<_BlackHoleEffect> createState() => _BlackHoleEffectState();
+  State<_HomeBlackHoleLayer> createState() => _HomeBlackHoleLayerState();
 }
 
-class _BlackHoleEffectState extends State<_BlackHoleEffect>
+class _HomeBlackHoleLayerState extends State<_HomeBlackHoleLayer>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
   double _time = 0;
-  double _lastElapsedSeconds = 0;
-  late final List<_AccretionParticle> _particles;
 
   @override
   void initState() {
     super.initState();
-    _particles = List.generate(160, (i) => _AccretionParticle(seed: i * 7919 + 13));
     _ticker = createTicker((elapsed) {
       if (!mounted) return;
-      final seconds = elapsed.inMicroseconds / 1e6;
-      final dt = (seconds - _lastElapsedSeconds).clamp(0.0, 0.05);
-      _lastElapsedSeconds = seconds;
-      setState(() {
-        _time = seconds;
-        for (final p in _particles) {
-          p.update(dt);
-        }
-      });
+      setState(() => _time = elapsed.inMilliseconds / 1000.0);
     })..start();
   }
 
@@ -726,207 +694,46 @@ class _BlackHoleEffectState extends State<_BlackHoleEffect>
     return AnimatedBuilder(
       animation: widget.scrollController,
       builder: (context, _) {
-        final hasScroll = widget.scrollController.hasClients &&
-            widget.scrollController.position.hasContentDimensions;
-        final offset = hasScroll ? widget.scrollController.offset : 0.0;
-        final maxScroll = hasScroll && widget.scrollController.position.maxScrollExtent > 0
-            ? widget.scrollController.position.maxScrollExtent
-            : 1.0;
-        final rawProgress = (offset / maxScroll).clamp(0.0, 1.0);
-        // Ease the scroll-driven drift so the hole glides rather than tracks
-        // the scroll offset linearly (which reads as mechanical / laggy).
-        final scrollProgress = _easeInOutCubic(rawProgress);
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final size = constraints.biggest;
+            final hasScroll = widget.scrollController.hasClients &&
+                widget.scrollController.position.hasContentDimensions;
+            final offset = hasScroll ? widget.scrollController.offset : 0.0;
+            final maxScroll =
+            hasScroll && widget.scrollController.position.maxScrollExtent > 0
+                ? widget.scrollController.position.maxScrollExtent
+                : 1.0;
+            final rawProgress = (offset / maxScroll).clamp(0.0, 1.0);
+            // Ease the scroll-driven drift so the hole glides rather than
+            // tracks the scroll offset linearly (mechanical / laggy).
+            final scrollProgress = _easeInOutCubic(rawProgress);
 
-        return CustomPaint(
-          painter: _BlackHolePainter(
-            time: _time,
-            scrollProgress: scrollProgress,
-            particles: _particles,
-          ),
-          size: Size.infinite,
+            // Gentle organic bob layered on top of the scroll-driven glide.
+            final bobX = sin(_time * 0.12) * size.width * 0.012;
+            final bobY = cos(_time * 0.09) * size.height * 0.01;
+
+            final diameter = size.shortestSide * 0.62;
+            final centerX = size.width * 0.85 - (scrollProgress * size.width * 0.12) + bobX;
+            final centerY = size.height * 0.24 + (scrollProgress * size.height * 0.52) + bobY;
+
+            return Positioned(
+              left: centerX - diameter / 2,
+              top: centerY - diameter / 2,
+              width: diameter,
+              height: diameter,
+              child: const Hero(
+                tag: 'black_hole',
+                child: BlackHoleOrb(),
+              ),
+            );
+          },
         );
       },
     );
   }
 }
 
-class _BlackHolePainter extends CustomPainter {
-  final double time;
-  final double scrollProgress;
-  final List<_AccretionParticle> particles;
-
-  _BlackHolePainter({
-    required this.time,
-    required this.scrollProgress,
-    required this.particles,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Gentle organic bob layered on top of the scroll-driven glide so the
-    // hole never looks perfectly static between scroll events.
-    final bobX = sin(time * 0.12) * size.width * 0.012;
-    final bobY = cos(time * 0.09) * size.height * 0.01;
-
-    final centerX = size.width * 0.85 - (scrollProgress * size.width * 0.12) + bobX;
-    final centerY = size.height * 0.24 + (scrollProgress * size.height * 0.52) + bobY;
-    final center = Offset(centerX, centerY);
-
-    // Slow breathing radius instead of a hard sine snap.
-    final breathe = 0.5 + 0.5 * sin(time * 0.18);
-    final baseRadius = size.width * 0.075 + size.width * 0.018 * breathe;
-    final diskTilt = 0.34; // how flattened the disk ellipse is (perspective)
-    final rotation = time * 0.09;
-
-    // ── 1. Ambient bloom ────────────────────────────────────────────────
-    final bloomPaint = Paint()
-      ..shader = ui.Gradient.radial(
-        center,
-        baseRadius * 4.2,
-        [
-          AppColors.accent.withValues(alpha: 0.22),
-          AppColors.accentSoft.withValues(alpha: 0.08),
-          Colors.transparent,
-        ],
-        [0.0, 0.35, 1.0],
-      )
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
-    canvas.drawCircle(center, baseRadius * 4.2, bloomPaint);
-
-    // ── 2. Accretion disk particles (Keplerian orbit, Doppler-tinted) ───
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation);
-
-    for (final p in particles) {
-      final orbitRadius = baseRadius * (1.15 + p.radius * 1.9);
-      final ex = cos(p.angle) * orbitRadius;
-      final ey = sin(p.angle) * orbitRadius * diskTilt;
-
-      // Doppler beaming: the side of the disk moving toward the viewer
-      // (here, approaching angle) reads brighter/bluer; receding side dimmer
-      // and warmer — this single trick is what makes a disk look "real".
-      final approach = (sin(p.angle) + 1) / 2; // 0..1
-      final heat = (1 - p.radius).clamp(0.0, 1.0); // hotter near the core
-      final hue = ui.lerpDouble(28, 205, (approach * 0.6 + heat * 0.4).clamp(0.0, 1.0))!;
-      final lightness = ui.lerpDouble(0.45, 0.85, approach * 0.7 + heat * 0.3)!;
-      final twinkle = 0.6 + 0.4 * sin(time * 3 + p.brightnessSeed * 20);
-      final alpha = (0.15 + 0.65 * approach) * (0.5 + 0.5 * heat) * twinkle;
-
-      final dotColor = HSLColor.fromAHSL(alpha.clamp(0.0, 0.95), hue, 0.85, lightness).toColor();
-      final dotRadius = p.size * (0.6 + heat * 0.8);
-
-      canvas.drawCircle(Offset(ex, ey), dotRadius, Paint()..color = dotColor);
-      if (heat > 0.6) {
-        canvas.drawCircle(
-          Offset(ex, ey),
-          dotRadius * 2.2,
-          Paint()..color = dotColor.withValues(alpha: dotColor.a * 0.25),
-        );
-      }
-    }
-    canvas.restore();
-
-    // ── 3. Thin structural disk rings for extra density under the particles ─
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(1.0, diskTilt);
-    for (int i = 0; i < 3; i++) {
-      final ringRadius = baseRadius * (1.3 + i * 0.55);
-      final sweepShader = ui.Gradient.sweep(
-        Offset.zero,
-        [
-          AppColors.accentWarm.withValues(alpha: 0.05),
-          AppColors.accent.withValues(alpha: 0.28),
-          AppColors.accentSecondary.withValues(alpha: 0.16),
-          AppColors.accentWarm.withValues(alpha: 0.05),
-        ],
-        const [0.0, 0.3, 0.65, 1.0],
-        TileMode.repeated,
-        rotation * (i.isEven ? 1 : -0.6),
-        rotation * (i.isEven ? 1 : -0.6) + 2 * pi,
-      );
-      canvas.drawCircle(
-        Offset.zero,
-        ringRadius,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.6 + i * 0.4
-          ..shader = sweepShader,
-      );
-    }
-    canvas.restore();
-
-    // ── 4. Gravitational-lensing "far side" arcs above & below the horizon ──
-    // Stylised nod to light bending around the hole so the back of the disk
-    // is visible skimming over the poles — the signature Interstellar look.
-    final lensPaintTop = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..shader = ui.Gradient.linear(
-        Offset(center.dx - baseRadius * 1.3, center.dy),
-        Offset(center.dx + baseRadius * 1.3, center.dy),
-        [
-          Colors.transparent,
-          Colors.white.withValues(alpha: 0.35),
-          AppColors.accentSoft.withValues(alpha: 0.3),
-          Colors.transparent,
-        ],
-        const [0.0, 0.4, 0.6, 1.0],
-      );
-    final lensRectTop = Rect.fromCenter(
-      center: Offset(center.dx, center.dy - baseRadius * 1.02),
-      width: baseRadius * 2.6,
-      height: baseRadius * 0.9,
-    );
-    canvas.drawArc(lensRectTop, pi, pi, false, lensPaintTop);
-
-    final lensRectBottom = Rect.fromCenter(
-      center: Offset(center.dx, center.dy + baseRadius * 1.02),
-      width: baseRadius * 2.6,
-      height: baseRadius * 0.9,
-    );
-    canvas.drawArc(lensRectBottom, 0, pi, false, lensPaintTop);
-
-    // ── 5. Photon ring — crisp bright edge right at the horizon boundary ──
-    final photonPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
-      ..shader = ui.Gradient.radial(
-        center,
-        baseRadius * 1.08,
-        [
-          Colors.white.withValues(alpha: 0.9),
-          AppColors.accentSoft.withValues(alpha: 0.25),
-        ],
-        const [0.88, 1.0],
-      );
-    canvas.drawCircle(center, baseRadius * 1.02, photonPaint);
-
-    // ── 6. Event horizon ─────────────────────────────────────────────────
-    canvas.drawCircle(
-      center,
-      baseRadius,
-      Paint()
-        ..color = Colors.black
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0),
-    );
-    canvas.drawCircle(
-      center,
-      baseRadius * 0.92,
-      Paint()
-        ..shader = ui.Gradient.radial(
-          center,
-          baseRadius * 0.92,
-          [Colors.black, const Color(0xFF020408)],
-        ),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_BlackHolePainter old) =>
-      old.time != time || old.scrollProgress != scrollProgress;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constellation layer — same idea as before, tuned with slightly more organic

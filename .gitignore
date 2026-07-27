@@ -39,6 +39,13 @@ migrate_working_dir/
 /build/url_launcher_android/
 /build/52112e2a745d4c79c42d83c4cc6bbe77.cache.dill.track.dill
 /build/last_build_run.json
+/build/58f78ba30496f56a2086825f9811be5c.cache.dill.track.dill
+/build/0418b486ce914458ba04093ce00d4980.cache.dill.track.dill
+/build/ef1b32a251d7af6ad781f328c9a51743/_composite.stamp
+/build/ef1b32a251d7af6ad781f328c9a51743/gen_localizations.stamp
+/build/ef1b32a251d7af6ad781f328c9a51743/gen_dart_plugin_registrant.stamp
+/build/native_hooks/
+/build/.last_build_id
 
 
 # Symbolication related
@@ -51,4 +58,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-/build/58f78ba30496f56a2086825f9811be5c.cache.dill.track.dill

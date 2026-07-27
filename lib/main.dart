@@ -7,6 +7,7 @@ import 'package:lottie/lottie.dart';
 import 'package:portfolio/constants/colors.dart';
 import 'package:portfolio/constants/size.dart';
 import 'package:portfolio/pages/home.dart';
+import 'package:portfolio/widgets/black_hole_orb.dart';
 
 void main() {
   runApp(const MyApp());
@@ -460,7 +461,7 @@ class _WideContent extends StatelessWidget {
         children: [
           Expanded(flex: 5, child: _LeftStatement(intro: intro, progress: progress)),
           const SizedBox(width: 56),
-          Expanded(flex: 5, child: _RightVisual(intro: intro, progress: progress, cosmos: cosmos)),
+          Expanded(flex: 5, child: _RightVisual(intro: intro, progress: progress)),
         ],
       ),
     );
@@ -482,7 +483,7 @@ class _NarrowContent extends StatelessWidget {
         children: [
           _LeftStatement(intro: intro, progress: progress, centered: true),
           const SizedBox(height: 40),
-          _RightVisual(intro: intro, progress: progress, cosmos: cosmos, compact: true),
+          _RightVisual(intro: intro, progress: progress, compact: true),
         ],
       ),
     );
@@ -777,12 +778,10 @@ class _RightVisual extends StatelessWidget {
   const _RightVisual({
     required this.intro,
     required this.progress,
-    required this.cosmos,
     this.compact = false,
   });
   final AnimationController intro;
   final AnimationController progress;
-  final AnimationController cosmos;
   final bool compact;
 
   @override
@@ -797,48 +796,57 @@ class _RightVisual extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: lottieSz,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: AnimatedBuilder(
-                      animation: cosmos,
-                      builder: (_, __) => CustomPaint(
-                        painter: _SingularityLoaderPainter(t: cosmos.value * 60),
+            // Square box so the Hero flight to HomePage's black hole (also
+            // measured as roughly square) morphs cleanly instead of
+            // stretching through a non-square shape mid-flight.
+            Center(
+              child: SizedBox(
+                width: lottieSz,
+                height: lottieSz,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // This IS the black hole on HomePage — same widget, same
+                    // Hero tag. The route transition flies/resizes it
+                    // directly into place instead of cross-fading two
+                    // separate paintings, so the two screens read as one
+                    // continuous scene.
+                    const Positioned.fill(
+                      child: Hero(
+                        tag: 'black_hole',
+                        child: BlackHoleOrb(),
                       ),
                     ),
-                  ),
-                  // SizedBox(
-                  //   width: lottieSz * 0.5,
-                  //   height: lottieSz * 0.5,
-                  //   child: ShaderMask(
-                  //     shaderCallback: (bounds) => AppColors.accentGradientStrong.createShader(bounds),
-                  //     blendMode: BlendMode.modulate,
-                  //     // child: Lottie.asset(
-                  //     //   'assets/animations/waving_hand.json',
-                  //     //   repeat: true,
-                  //     //   fit: BoxFit.contain,
-                  //     // ),
-                  //   ),
-                  // ),
-                  AnimatedBuilder(
-                    animation: progress,
-                    builder: (_, __) {
-                      final a = progress.value * 2 * pi;
-                      final r = lottieSz * 0.44;
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          _floatNode('Vision', a, r),
-                          _floatNode('Models', a + 2.09, r),
-                          _floatNode('ROS', a + 4.19, r),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                    SizedBox(
+                      width: lottieSz * 0.5,
+                      height: lottieSz * 0.5,
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => AppColors.accentGradientStrong.createShader(bounds),
+                        blendMode: BlendMode.modulate,
+                        child: Lottie.asset(
+                          'assets/animations/waving_hand.json',
+                          repeat: true,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    AnimatedBuilder(
+                      animation: progress,
+                      builder: (_, __) {
+                        final a = progress.value * 2 * pi;
+                        final r = lottieSz * 0.44;
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _floatNode('Vision', a, r),
+                            _floatNode('Models', a + 2.09, r),
+                            _floatNode('ROS', a + 4.19, r),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -942,88 +950,4 @@ class _StatusRow extends StatelessWidget {
       }).toList(),
     );
   }
-}
-
-// ── Singularity loader painter ────────────────────────────────────────────────
-// A compact preview of the black hole from HomePage: a slow-rotating,
-// Doppler-tinted accretion ring around a soft dark core with a subtle photon
-// edge. Small, calm, and thematically identical to what's coming next.
-class _SingularityLoaderPainter extends CustomPainter {
-  final double t;
-  _SingularityLoaderPainter({required this.t});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final maxR = min(size.width, size.height) * 0.46;
-    final coreR = maxR * 0.34;
-    final rotation = t * 0.5;
-
-    // Ambient bloom
-    canvas.drawCircle(
-      center,
-      maxR,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            AppColors.accent.withValues(alpha: 0.16),
-            Colors.transparent,
-          ],
-          stops: const [0.3, 1.0],
-        ).createShader(Rect.fromCircle(center: center, radius: maxR))
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
-    );
-
-    // Disk ring — asymmetric brightness for a touch of Doppler beaming
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation);
-    canvas.scale(1.0, 0.4);
-    final ringPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.4
-      ..shader = SweepGradient(
-        colors: [
-          AppColors.accentWarm.withValues(alpha: 0.15),
-          AppColors.accent.withValues(alpha: 0.85),
-          AppColors.accentSecondary.withValues(alpha: 0.35),
-          AppColors.accentWarm.withValues(alpha: 0.15),
-        ],
-        stops: const [0.0, 0.3, 0.65, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset.zero, radius: maxR * 0.86));
-    canvas.drawCircle(Offset.zero, maxR * 0.86, ringPaint);
-    canvas.restore();
-
-    // Photon ring
-    canvas.drawCircle(
-      center,
-      coreR * 1.12,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = Colors.white.withValues(alpha: 0.7),
-    );
-
-    // Core
-    canvas.drawCircle(
-      center,
-      coreR,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [const Color(0xFF020408), Colors.black],
-        ).createShader(Rect.fromCircle(center: center, radius: coreR)),
-    );
-
-    // A handful of orbiting embers for life
-    for (int i = 0; i < 5; i++) {
-      final a = rotation * (1.4 + i * 0.15) + i * (2 * pi / 5);
-      final r = maxR * (0.58 + 0.28 * ((i % 3) / 2));
-      final p = Offset(center.dx + cos(a) * r, center.dy + sin(a) * r * 0.4);
-      final twinkle = 0.5 + 0.5 * sin(t * 2 + i);
-      canvas.drawCircle(p, 1.6 + twinkle, Paint()..color = AppColors.accentSoft.withValues(alpha: 0.5 + 0.4 * twinkle));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SingularityLoaderPainter old) => old.t != t;
 }
