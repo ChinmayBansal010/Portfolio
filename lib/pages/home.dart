@@ -1,3 +1,4 @@
+// pages/home.dart
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -20,45 +21,89 @@ import 'package:portfolio/widgets/project.dart';
 import 'package:portfolio/widgets/skill.dart';
 import 'package:portfolio/widgets/black_hole_orb.dart';
 
-// A single small easing helper used across painters so all motion in the
-// scene shares the same "weight" — this is most of what makes hand-rolled
-// canvas animation read as premium vs. janky.
 double _easeInOutCubic(double t) {
   t = t.clamp(0.0, 1.0);
   return t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2;
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeShell extends StatefulWidget {
+  const HomeShell({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final scrollController = ScrollController();
   final List<GlobalKey> navbarKeys = List.generate(navTitles.length, (_) => GlobalKey());
-
   final ValueNotifier<int> _currentActiveNavIndex = ValueNotifier<int>(0);
   bool _isScrollingProgrammatically = false;
+
+  late final AnimationController _bootIntro;
+  late final AnimationController _bootProgress;
+  late final AnimationController _reveal;
+  bool _revealStarted = false;
+  bool _splashDone = false;
+
+  final GlobalKey _stackKey = GlobalKey();
+  final GlobalKey _splashOrbAnchorKey = GlobalKey();
+  Rect? _splashOrbRect;
+  late final Ticker _measureTicker;
+  late final Ticker _orbTimeTicker;
+  double _orbTime = 0;
+
+  static const _contentReadyDelay = Duration(milliseconds: 3200);
+  static const _revealLength = Duration(milliseconds: 1400);
 
   @override
   void initState() {
     super.initState();
     scrollController.addListener(_onScroll);
+
+    _bootIntro = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..forward();
+    _bootProgress = AnimationController(vsync: this, duration: const Duration(milliseconds: 2800))..forward();
+    _reveal = AnimationController(vsync: this, duration: _revealLength);
+
+    _measureTicker = createTicker((_) => _measureSplashOrb())..start();
+    _orbTimeTicker = createTicker((elapsed) {
+      if (mounted) setState(() => _orbTime = elapsed.inMilliseconds / 1000.0);
+    })..start();
+
+    Future.delayed(_contentReadyDelay, () async {
+      if (!mounted) return;
+      setState(() => _revealStarted = true);
+      await _reveal.forward();
+      if (!mounted) return;
+      setState(() => _splashDone = true);
+      _measureTicker.stop();
+    });
   }
 
-  @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    _currentActiveNavIndex.dispose();
-    super.dispose();
+  void _measureSplashOrb() {
+    if (_reveal.isCompleted) return;
+    final anchorCtx = _splashOrbAnchorKey.currentContext;
+    final stackCtx = _stackKey.currentContext;
+    if (anchorCtx == null || stackCtx == null) return;
+    final anchorBox = anchorCtx.findRenderObject() as RenderBox?;
+    final stackBox = stackCtx.findRenderObject() as RenderBox?;
+    if (anchorBox == null || stackBox == null || !anchorBox.attached) return;
+    final topLeft = anchorBox.localToGlobal(Offset.zero, ancestor: stackBox);
+    final rect = topLeft & anchorBox.size;
+    if (_splashOrbRect != rect) {
+      setState(() => _splashOrbRect = rect);
+    }
+  }
+
+  Rect _homeOrbRect(Size stackSize, double scrollProgress, double bobX, double bobY) {
+    final diameter = stackSize.shortestSide * 0.62;
+    final centerX = stackSize.width * 0.85 - (scrollProgress * stackSize.width * 0.12) + bobX;
+    final centerY = stackSize.height * 0.24 + (scrollProgress * stackSize.height * 0.52) + bobY;
+    return Rect.fromCenter(center: Offset(centerX, centerY), width: diameter, height: diameter);
   }
 
   void _onScroll() {
-    if (!mounted || _isScrollingProgrammatically) return;
+    if (!mounted || _isScrollingProgrammatically || !_splashDone) return;
     if (!scrollController.hasClients || !scrollController.position.hasContentDimensions) return;
 
     final maxScroll = scrollController.position.maxScrollExtent;
@@ -96,15 +141,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _navigateToSection(int navIndex) async {
+    if (!_splashDone) return;
     _isScrollingProgrammatically = true;
     _currentActiveNavIndex.value = navIndex;
-    await NavigationHelper.scrollToSection(
-      context: context,
-      navIndex: navIndex,
-      navbarKeys: navbarKeys,
-    );
+    await NavigationHelper.scrollToSection(context: context, navIndex: navIndex, navbarKeys: navbarKeys);
     await Future.delayed(const Duration(milliseconds: 650));
     if (mounted) _isScrollingProgrammatically = false;
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_onScroll);
+    scrollController.dispose();
+    _currentActiveNavIndex.dispose();
+    _bootIntro.dispose();
+    _bootProgress.dispose();
+    _reveal.dispose();
+    _measureTicker.dispose();
+    _orbTimeTicker.dispose();
+    super.dispose();
   }
 
   @override
@@ -124,19 +179,11 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           body: Stack(
+            key: _stackKey,
             children: [
-              // ── Layer 0: deep space gradient wash (sits behind everything,
-              // gives the nebula/stars something richer than flat bg to sit on)
-              Positioned.fill(child: _DeepSpaceWash()),
-
-              Positioned.fill(
-                child: _NebulaBackground(scrollController: scrollController),
-              ),
-
-              Positioned.fill(
-                child: _PerspectiveGridPainterWidget(scrollController: scrollController),
-              ),
-
+              Positioned.fill(child: const _DeepSpaceWash()),
+              Positioned.fill(child: _NebulaBackground(scrollController: scrollController)),
+              Positioned.fill(child: _PerspectiveGridPainterWidget(scrollController: scrollController)),
               Positioned.fill(
                 child: _CinematicStarField(
                   scrollController: scrollController,
@@ -144,73 +191,117 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // ── Cinematic black hole layer ──
-              // This is the same Hero-tagged BlackHoleOrb the splash screen
-              // shows — the route transition flies/resizes it directly from
-              // its splash position into whatever position this layer
-              // computes for scroll offset 0, so the two screens read as one
-              // continuous scene rather than a hard cut between two paintings.
-              Positioned.fill(
-                child: _HomeBlackHoleLayer(scrollController: scrollController),
+              AnimatedBuilder(
+                animation: Listenable.merge([_reveal, scrollController]),
+                builder: (context, _) {
+                  final size = constraints.biggest;
+                  final hasScroll = scrollController.hasClients && scrollController.position.hasContentDimensions;
+                  final offset = hasScroll ? scrollController.offset : 0.0;
+                  final maxScroll = hasScroll && scrollController.position.maxScrollExtent > 0
+                      ? scrollController.position.maxScrollExtent
+                      : 1.0;
+                  final rawProgress = (offset / maxScroll).clamp(0.0, 1.0);
+                  final scrollProgress = _splashDone ? _easeInOutCubic(rawProgress) : 0.0;
+                  final bobX = sin(_orbTime * 0.12) * size.width * 0.012;
+                  final bobY = cos(_orbTime * 0.09) * size.height * 0.01;
+
+                  final homeRect = _homeOrbRect(size, scrollProgress, bobX, bobY);
+
+                  if (_splashDone) {
+                    return Positioned.fromRect(rect: homeRect, child: const BlackHoleOrb());
+                  }
+                  final fromRect = _splashOrbRect ?? homeRect;
+                  final t = Curves.easeInOutCubic.transform(_reveal.value);
+                  final rect = Rect.lerp(fromRect, homeRect, t)!;
+                  return Positioned.fromRect(rect: rect, child: const BlackHoleOrb());
+                },
               ),
 
               Positioned.fill(
-                child: _ConstellationLayer(
-                  scrollController: scrollController,
-                  nodeCount: isDesktop ? 60 : 30,
-                ),
+                child: _ConstellationLayer(scrollController: scrollController, nodeCount: isDesktop ? 60 : 30),
               ),
 
               Positioned.fill(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      SizedBox(height: isDesktop ? 104 : 92, key: navbarKeys[0]),
-                      MainSection(
-                        navbarKeys: navbarKeys,
-                        scrollController: scrollController,
+                child: IgnorePointer(
+                  ignoring: !_splashDone,
+                  child: AnimatedBuilder(
+                    animation: _reveal,
+                    builder: (context, child) => Opacity(
+                      opacity: Curves.easeIn.transform(_reveal.value),
+                      child: child,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          SizedBox(height: isDesktop ? 104 : 92, key: navbarKeys[0]),
+                          MainSection(navbarKeys: navbarKeys, scrollController: scrollController),
+                          const SizedBox(height: 120),
+                          SkillSection(navbarKey: navbarKeys[1]),
+                          const SizedBox(height: 80),
+                          ProjectSection(navbarKey: navbarKeys[2]),
+                          const SizedBox(height: 80),
+                          GetInTouchSection(navbarKey: navbarKeys[3]),
+                          const SizedBox(height: 16),
+                          const Footer(),
+                        ],
                       ),
-                      const SizedBox(height: 120),
-                      SkillSection(navbarKey: navbarKeys[1]),
-                      const SizedBox(height: 80),
-                      ProjectSection(navbarKey: navbarKeys[2]),
-                      const SizedBox(height: 80),
-                      GetInTouchSection(navbarKey: navbarKeys[3]),
-                      const SizedBox(height: 16),
-                      const Footer(),
-                    ],
+                    ),
                   ),
                 ),
               ),
 
-              // ── Frosted header + scroll progress ─────────────────
+              if (!_splashDone)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    ignoring: _revealStarted,
+                    child: AnimatedBuilder(
+                      animation: _reveal,
+                      builder: (context, child) {
+                        final fade = 1.0 - Curves.easeIn.transform(_reveal.value);
+                        return Opacity(opacity: fade, child: child);
+                      },
+                      child: isDesktop
+                          ? _WideContent(
+                        intro: _bootIntro,
+                        progress: _bootProgress,
+                        orbAnchorKey: _splashOrbAnchorKey,
+                      )
+                          : _NarrowContent(
+                        intro: _bootIntro,
+                        progress: _bootProgress,
+                        orbAnchorKey: _splashOrbAnchorKey,
+                      ),
+                    ),
+                  ),
+                ),
+
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                child: FrostedHeaderWrapper(
-                  backgroundColor: AppColors.background,
-                  backgroundAlpha: 88,
-                  blurSigma: 24,
-                  enableBorder: true,
-                  height: isDesktop ? 94 : 84,
-                  child: Stack(
-                    children: [
-                      ValueListenableBuilder<int>(
-                        valueListenable: _currentActiveNavIndex,
-                        builder: (context, activeIndex, _) => isDesktop
-                            ? HeaderDesktop(
-                          onNavMenuTap: _navigateToSection,
-                          activeIndex: activeIndex,
-                        )
-                            : HeaderMobile(
-                          onLogoTap: () => _navigateToSection(0),
-                          onMenuTap: () => scaffoldKey.currentState?.openEndDrawer(),
-                        ),
+                child: AnimatedBuilder(
+                  animation: _reveal,
+                  builder: (context, child) => Opacity(
+                    opacity: Curves.easeIn.transform(_reveal.value),
+                    child: IgnorePointer(ignoring: !_splashDone, child: child),
+                  ),
+                  child: FrostedHeaderWrapper(
+                    backgroundColor: AppColors.background,
+                    backgroundAlpha: 88,
+                    blurSigma: 24,
+                    enableBorder: true,
+                    height: isDesktop ? 94 : 84,
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: _currentActiveNavIndex,
+                      builder: (context, activeIndex, _) => isDesktop
+                          ? HeaderDesktop(onNavMenuTap: _navigateToSection, activeIndex: activeIndex)
+                          : HeaderMobile(
+                        onLogoTap: () => _navigateToSection(0),
+                        onMenuTap: () => scaffoldKey.currentState?.openEndDrawer(),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -222,14 +313,8 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Layer 0: Deep space wash — a static-ish vertical gradient so every layer on
-// top of it has real contrast instead of sitting on a flat solid color.
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _DeepSpaceWash extends StatelessWidget {
   const _DeepSpaceWash();
-
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
@@ -249,20 +334,14 @@ class _DeepSpaceWash extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Nebula — three drifting, breathing color fields instead of two static ones.
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _NebulaBackground extends StatefulWidget {
   final ScrollController scrollController;
   const _NebulaBackground({required this.scrollController});
-
   @override
   State<_NebulaBackground> createState() => _NebulaBackgroundState();
 }
 
-class _NebulaBackgroundState extends State<_NebulaBackground>
-    with SingleTickerProviderStateMixin {
+class _NebulaBackgroundState extends State<_NebulaBackground> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   double _t = 0;
 
@@ -285,8 +364,7 @@ class _NebulaBackgroundState extends State<_NebulaBackground>
     return AnimatedBuilder(
       animation: widget.scrollController,
       builder: (context, _) {
-        final offset = (widget.scrollController.hasClients &&
-            widget.scrollController.position.hasContentDimensions)
+        final offset = (widget.scrollController.hasClients && widget.scrollController.position.hasContentDimensions)
             ? widget.scrollController.offset
             : 0.0;
         return CustomPaint(painter: _NebulaPainter(t: _t, scrollOffset: offset));
@@ -300,8 +378,7 @@ class _NebulaPainter extends CustomPainter {
   final double scrollOffset;
   _NebulaPainter({required this.t, required this.scrollOffset});
 
-  void _blob(Canvas canvas, Size size, Offset center, double radius, double hue,
-      double sat, double light, double alpha) {
+  void _blob(Canvas canvas, Size size, Offset center, double radius, double hue, double sat, double light, double alpha) {
     final shader = RadialGradient(
       colors: [
         HSLColor.fromAHSL(alpha, hue, sat, light).toColor(),
@@ -316,32 +393,19 @@ class _NebulaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final scrollShift = scrollOffset * 0.22;
-
-    // Violet drift, slow figure-eight wander
     final hue1 = 260.0 + sin(t * 0.15) * 20;
     final alpha1 = 0.06 + sin(t * 0.2) * 0.016;
-    final c1 = Offset(
-      size.width * (0.3 + sin(t * 0.05) * 0.05),
-      size.height * 0.4 - scrollShift + cos(t * 0.07) * 30,
-    );
+    final c1 = Offset(size.width * (0.3 + sin(t * 0.05) * 0.05), size.height * 0.4 - scrollShift + cos(t * 0.07) * 30);
     _blob(canvas, size, c1, size.width * 0.55, hue1, 0.7, 0.35, alpha1);
 
-    // Cyan drift, opposing phase
     final hue2 = 195.0 + cos(t * 0.1) * 15;
     final alpha2 = 0.042 + cos(t * 0.17) * 0.012;
-    final c2 = Offset(
-      size.width * (0.75 + cos(t * 0.04) * 0.04),
-      size.height * 0.6 - scrollShift * 0.7 + sin(t * 0.06) * 26,
-    );
+    final c2 = Offset(size.width * (0.75 + cos(t * 0.04) * 0.04), size.height * 0.6 - scrollShift * 0.7 + sin(t * 0.06) * 26);
     _blob(canvas, size, c2, size.width * 0.45, hue2, 0.65, 0.3, alpha2);
 
-    // Faint rose accent, very slow, gives depth without competing for attention
     final hue3 = 320.0 + sin(t * 0.08) * 12;
     final alpha3 = 0.022 + sin(t * 0.11 + 1.2) * 0.008;
-    final c3 = Offset(
-      size.width * (0.5 + sin(t * 0.03 + 2) * 0.15),
-      size.height * (0.85 - scrollShift * 0.4 / size.height),
-    );
+    final c3 = Offset(size.width * (0.5 + sin(t * 0.03 + 2) * 0.15), size.height * (0.85 - scrollShift * 0.4 / size.height));
     _blob(canvas, size, c3, size.width * 0.4, hue3, 0.6, 0.4, alpha3.clamp(0.0, 1.0));
   }
 
@@ -349,20 +413,14 @@ class _NebulaPainter extends CustomPainter {
   bool shouldRepaint(_NebulaPainter old) => old.t != t || old.scrollOffset != scrollOffset;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Perspective grid — smoother easing into the vanishing point, gentle pulse.
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _PerspectiveGridPainterWidget extends StatefulWidget {
   final ScrollController scrollController;
   const _PerspectiveGridPainterWidget({required this.scrollController});
-
   @override
   State<_PerspectiveGridPainterWidget> createState() => _PerspectiveGridPainterWidgetState();
 }
 
-class _PerspectiveGridPainterWidgetState extends State<_PerspectiveGridPainterWidget>
-    with SingleTickerProviderStateMixin {
+class _PerspectiveGridPainterWidgetState extends State<_PerspectiveGridPainterWidget> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   double _t = 0;
 
@@ -385,14 +443,10 @@ class _PerspectiveGridPainterWidgetState extends State<_PerspectiveGridPainterWi
     return AnimatedBuilder(
       animation: widget.scrollController,
       builder: (context, _) {
-        final offset = (widget.scrollController.hasClients &&
-            widget.scrollController.position.hasContentDimensions)
+        final offset = (widget.scrollController.hasClients && widget.scrollController.position.hasContentDimensions)
             ? widget.scrollController.offset
             : 0.0;
-        return CustomPaint(
-          painter: _PerspectiveGridPainter(scrollOffset: offset, t: _t),
-          size: Size.infinite,
-        );
+        return CustomPaint(painter: _PerspectiveGridPainter(scrollOffset: offset, t: _t), size: Size.infinite);
       },
     );
   }
@@ -410,7 +464,6 @@ class _PerspectiveGridPainter extends CustomPainter {
     final scroll = scrollOffset * 0.001;
     const lineCount = 14;
     final pulse = 0.5 + 0.5 * sin(t * 0.35);
-
     final linePaint = Paint()..strokeWidth = 0.5;
 
     for (int i = 0; i <= lineCount; i++) {
@@ -420,11 +473,7 @@ class _PerspectiveGridPainter extends CustomPainter {
       final grad = ui.Gradient.linear(
         Offset(vanishX, vanishY),
         Offset(vanishX + endX, size.height),
-        [
-          const Color(0x00000000),
-          Color.fromRGBO(108, 99, 255, alpha),
-          const Color(0x00000000),
-        ],
+        [const Color(0x00000000), Color.fromRGBO(108, 99, 255, alpha), const Color(0x00000000)],
         [0.0, 0.5, 1.0],
       );
       linePaint.shader = grad;
@@ -436,44 +485,27 @@ class _PerspectiveGridPainter extends CustomPainter {
       final ease = _easeInOutCubic(r * r);
       final y = vanishY + (size.height - vanishY) * ease;
       final xSpan = size.width * 1.2 * ease;
-      final alpha = (0.018 + 0.01 * sin(scroll * 2 + row * 0.5)) *
-          (1 - (y - vanishY) / (size.height - vanishY) * 0.4);
+      final alpha = (0.018 + 0.01 * sin(scroll * 2 + row * 0.5)) * (1 - (y - vanishY) / (size.height - vanishY) * 0.4);
       final grad = ui.Gradient.linear(
         Offset(vanishX - xSpan, y),
         Offset(vanishX + xSpan, y),
-        [
-          const Color(0x00000000),
-          Color.fromRGBO(108, 99, 255, alpha),
-          Color.fromRGBO(108, 99, 255, alpha),
-          const Color(0x00000000),
-        ],
+        [const Color(0x00000000), Color.fromRGBO(108, 99, 255, alpha), Color.fromRGBO(108, 99, 255, alpha), const Color(0x00000000)],
         [0.0, 0.15, 0.85, 1.0],
       );
       linePaint.shader = grad;
       canvas.drawLine(Offset(vanishX - xSpan, y), Offset(vanishX + xSpan, y), linePaint);
     }
 
-    // Soft glow at the vanishing point itself — anchors the whole grid.
-    final glow = ui.Gradient.radial(
-      Offset(vanishX, vanishY),
-      140,
-      [
-        Color.fromRGBO(108, 99, 255, 0.05 * (0.6 + 0.4 * pulse)),
-        Colors.transparent,
-      ],
-    );
+    final glow = ui.Gradient.radial(Offset(vanishX, vanishY), 140, [
+      Color.fromRGBO(108, 99, 255, 0.05 * (0.6 + 0.4 * pulse)),
+      Colors.transparent,
+    ]);
     canvas.drawCircle(Offset(vanishX, vanishY), 140, Paint()..shader = glow);
   }
 
   @override
-  bool shouldRepaint(_PerspectiveGridPainter old) =>
-      old.scrollOffset != scrollOffset || old.t != t;
+  bool shouldRepaint(_PerspectiveGridPainter old) => old.scrollOffset != scrollOffset || old.t != t;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Starfield — twinkle + parallax + velocity streaks on fast scroll (the
-// "hyperspace" read that sells a hand-painted canvas as a real particle engine).
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _StarParticle {
   late double x, y, z, twinkle, twinkleSpeed, radius;
@@ -531,27 +563,17 @@ class _StarParticle {
     final r = max(0.3, radius * scale * (0.7 + 0.3 * twinkleVal));
     final c = baseColor.withValues(alpha: alpha);
 
-    // Velocity streak: when scrolling fast, foreground stars stretch into a
-    // short trail toward their previous frame position — cheap, very effective.
     final speedFactor = (scrollVelocity.abs() * scale).clamp(0.0, 40.0);
     if (hasPrev && speedFactor > 2.5 && depth > 0.25) {
       final trailPaint = Paint()
         ..strokeCap = StrokeCap.round
         ..strokeWidth = r * 1.4
-        ..shader = ui.Gradient.linear(
-          Offset(prevScreenX, prevScreenY),
-          Offset(px, py),
-          [Colors.transparent, c],
-        );
+        ..shader = ui.Gradient.linear(Offset(prevScreenX, prevScreenY), Offset(px, py), [Colors.transparent, c]);
       canvas.drawLine(Offset(prevScreenX, prevScreenY), Offset(px, py), trailPaint);
     } else {
       canvas.drawCircle(Offset(px, py), r, Paint()..color = c);
       if (depth > 0.65 && r > 1.0) {
-        canvas.drawCircle(
-          Offset(px, py),
-          r * 2.5,
-          Paint()..color = baseColor.withValues(alpha: alpha * 0.12),
-        );
+        canvas.drawCircle(Offset(px, py), r * 2.5, Paint()..color = baseColor.withValues(alpha: alpha * 0.12));
       }
     }
 
@@ -564,18 +586,12 @@ class _StarParticle {
 class _CinematicStarField extends StatefulWidget {
   final ScrollController scrollController;
   final int particleCount;
-
-  const _CinematicStarField({
-    required this.scrollController,
-    this.particleCount = 600,
-  });
-
+  const _CinematicStarField({required this.scrollController, this.particleCount = 600});
   @override
   State<_CinematicStarField> createState() => _CinematicStarFieldState();
 }
 
-class _CinematicStarFieldState extends State<_CinematicStarField>
-    with SingleTickerProviderStateMixin {
+class _CinematicStarFieldState extends State<_CinematicStarField> with SingleTickerProviderStateMixin {
   late List<_StarParticle> _particles;
   late Ticker _ticker;
   double _lastScrollOffset = 0;
@@ -591,13 +607,11 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
 
   void _onTick(Duration elapsed) {
     if (!mounted) return;
-    final currentOffset = (widget.scrollController.hasClients &&
-        widget.scrollController.position.hasContentDimensions)
+    final currentOffset = (widget.scrollController.hasClients && widget.scrollController.position.hasContentDimensions)
         ? widget.scrollController.offset
         : 0.0;
     final scrollDelta = currentOffset - _lastScrollOffset;
     _lastScrollOffset = currentOffset;
-    // Smooth the velocity so streaks ease in/out instead of flickering.
     _scrollVelocity = _scrollVelocity * 0.85 + scrollDelta * 0.15;
     for (final p in _particles) {
       p.update(scrollDelta: scrollDelta);
@@ -620,12 +634,7 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
         _mouseY = e.localPosition.dy / size.height;
       },
       child: CustomPaint(
-        painter: _StarFieldPainter(
-          particles: _particles,
-          mouseX: _mouseX,
-          mouseY: _mouseY,
-          scrollVelocity: _scrollVelocity,
-        ),
+        painter: _StarFieldPainter(particles: _particles, mouseX: _mouseX, mouseY: _mouseY, scrollVelocity: _scrollVelocity),
         size: Size.infinite,
       ),
     );
@@ -635,12 +644,7 @@ class _CinematicStarFieldState extends State<_CinematicStarField>
 class _StarFieldPainter extends CustomPainter {
   final List<_StarParticle> particles;
   final double mouseX, mouseY, scrollVelocity;
-  _StarFieldPainter({
-    required this.particles,
-    required this.mouseX,
-    required this.mouseY,
-    required this.scrollVelocity,
-  });
+  _StarFieldPainter({required this.particles, required this.mouseX, required this.mouseY, required this.scrollVelocity});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -652,93 +656,6 @@ class _StarFieldPainter extends CustomPainter {
   @override
   bool shouldRepaint(_StarFieldPainter old) => true;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Black hole — now just a positioning shell around the shared, Hero-tagged
-// BlackHoleOrb widget (see widgets/black_hole_orb.dart). All the accretion
-// disk / lensing / photon-ring painting lives there so the exact same widget
-// can be flown in from the splash screen. This shell's only job is deciding
-// where that orb sits and how big it is as the page scrolls.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _HomeBlackHoleLayer extends StatefulWidget {
-  final ScrollController scrollController;
-  const _HomeBlackHoleLayer({required this.scrollController});
-
-  @override
-  State<_HomeBlackHoleLayer> createState() => _HomeBlackHoleLayerState();
-}
-
-class _HomeBlackHoleLayerState extends State<_HomeBlackHoleLayer>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  double _time = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker((elapsed) {
-      if (!mounted) return;
-      setState(() => _time = elapsed.inMilliseconds / 1000.0);
-    })..start();
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.scrollController,
-      builder: (context, _) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final size = constraints.biggest;
-            final hasScroll = widget.scrollController.hasClients &&
-                widget.scrollController.position.hasContentDimensions;
-            final offset = hasScroll ? widget.scrollController.offset : 0.0;
-            final maxScroll =
-            hasScroll && widget.scrollController.position.maxScrollExtent > 0
-                ? widget.scrollController.position.maxScrollExtent
-                : 1.0;
-            final rawProgress = (offset / maxScroll).clamp(0.0, 1.0);
-            // Ease the scroll-driven drift so the hole glides rather than
-            // tracks the scroll offset linearly (mechanical / laggy).
-            final scrollProgress = _easeInOutCubic(rawProgress);
-
-            // Gentle organic bob layered on top of the scroll-driven glide.
-            final bobX = sin(_time * 0.12) * size.width * 0.012;
-            final bobY = cos(_time * 0.09) * size.height * 0.01;
-
-            final diameter = size.shortestSide * 0.62;
-            final centerX = size.width * 0.85 - (scrollProgress * size.width * 0.12) + bobX;
-            final centerY = size.height * 0.24 + (scrollProgress * size.height * 0.52) + bobY;
-
-            return Positioned(
-              left: centerX - diameter / 2,
-              top: centerY - diameter / 2,
-              width: diameter,
-              height: diameter,
-              child: const Hero(
-                tag: 'black_hole',
-                child: BlackHoleOrb(),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Constellation layer — same idea as before, tuned with slightly more organic
-// drift and a touch of depth-based dimming so nodes don't look uniformly flat.
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _ConstellationNode {
   late double x, y, vx, vy, depth;
@@ -763,18 +680,12 @@ class _ConstellationNode {
 class _ConstellationLayer extends StatefulWidget {
   final ScrollController scrollController;
   final int nodeCount;
-
-  const _ConstellationLayer({
-    required this.scrollController,
-    this.nodeCount = 50,
-  });
-
+  const _ConstellationLayer({required this.scrollController, this.nodeCount = 50});
   @override
   State<_ConstellationLayer> createState() => _ConstellationLayerState();
 }
 
-class _ConstellationLayerState extends State<_ConstellationLayer>
-    with SingleTickerProviderStateMixin {
+class _ConstellationLayerState extends State<_ConstellationLayer> with SingleTickerProviderStateMixin {
   late List<_ConstellationNode> _nodes;
   late Ticker _ticker;
   double _mouseX = 0.5, _mouseY = 0.5;
@@ -808,11 +719,7 @@ class _ConstellationLayerState extends State<_ConstellationLayer>
       },
       child: IgnorePointer(
         child: CustomPaint(
-          painter: _ConstellationPainterFull(
-            nodes: _nodes,
-            mouseX: _mouseX,
-            mouseY: _mouseY,
-          ),
+          painter: _ConstellationPainterFull(nodes: _nodes, mouseX: _mouseX, mouseY: _mouseY),
           size: Size.infinite,
         ),
       ),
@@ -824,12 +731,7 @@ class _ConstellationPainterFull extends CustomPainter {
   final List<_ConstellationNode> nodes;
   final double mouseX, mouseY;
   static const maxDist = 100.0;
-
-  _ConstellationPainterFull({
-    required this.nodes,
-    required this.mouseX,
-    required this.mouseY,
-  });
+  _ConstellationPainterFull({required this.nodes, required this.mouseX, required this.mouseY});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -838,7 +740,6 @@ class _ConstellationPainterFull extends CustomPainter {
     final maxDistSq = maxDist * maxDist;
     final mxPx = mouseX * size.width;
     final myPx = mouseY * size.height;
-
     final positions = nodes.map((n) => Offset(n.x * size.width, n.y * size.height)).toList();
 
     for (int i = 0; i < positions.length; i++) {
@@ -856,7 +757,6 @@ class _ConstellationPainterFull extends CustomPainter {
         }
       }
 
-      // Cursor magnetism lines
       final cdx = a.dx - mxPx, cdy = a.dy - myPx;
       final cDistSq = cdx * cdx + cdy * cdy;
       if (cDistSq <= (maxDist * 1.8) * (maxDist * 1.8)) {
@@ -873,6 +773,394 @@ class _ConstellationPainterFull extends CustomPainter {
 
   @override
   bool shouldRepaint(_ConstellationPainterFull old) => true;
+}
+
+class _WideContent extends StatelessWidget {
+  const _WideContent({required this.intro, required this.progress, required this.orbAnchorKey});
+  final AnimationController intro;
+  final AnimationController progress;
+  final GlobalKey orbAnchorKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 72),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(flex: 5, child: _LeftStatement(intro: intro, progress: progress)),
+          const SizedBox(width: 56),
+          Expanded(flex: 5, child: _RightVisual(intro: intro, progress: progress, orbAnchorKey: orbAnchorKey)),
+        ],
+      ),
+    );
+  }
+}
+
+class _NarrowContent extends StatelessWidget {
+  const _NarrowContent({required this.intro, required this.progress, required this.orbAnchorKey});
+  final AnimationController intro;
+  final AnimationController progress;
+  final GlobalKey orbAnchorKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
+        children: [
+          _LeftStatement(intro: intro, progress: progress, centered: true),
+          const SizedBox(height: 40),
+          _RightVisual(intro: intro, progress: progress, orbAnchorKey: orbAnchorKey, compact: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeftStatement extends StatelessWidget {
+  const _LeftStatement({required this.intro, required this.progress, this.centered = false});
+  final AnimationController intro;
+  final AnimationController progress;
+  final bool centered;
+
+  Widget _stagger(Widget child, double from, {Offset slide = const Offset(0, 0.10)}) {
+    final anim = CurvedAnimation(parent: intro, curve: Interval(from, 1.0, curve: Curves.easeOutCubic));
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(position: Tween(begin: slide, end: Offset.zero).animate(anim), child: child),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final align = centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final textAlign = centered ? TextAlign.center : TextAlign.start;
+
+    return Column(
+      crossAxisAlignment: align,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _stagger(
+          Row(
+            mainAxisAlignment: centered ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF22C55E),
+                  boxShadow: [BoxShadow(color: const Color(0xFF22C55E).withValues(alpha: 0.55), blurRadius: 8, spreadRadius: 1)],
+                ),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                'CHINMAY BANSAL  ·  AVAILABLE',
+                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 2.2, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+          0.0,
+        ),
+        const SizedBox(height: 24),
+        _stagger(
+          Text(
+            'Computer vision\n& AI systems\nthat ship.',
+            textAlign: textAlign,
+            style: TextStyle(fontSize: 58, fontWeight: FontWeight.w900, height: 0.96, letterSpacing: -2.2, color: AppColors.textPrimary),
+          ),
+          0.07,
+          slide: const Offset(0, 0.08),
+        ),
+        const SizedBox(height: 22),
+        _stagger(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Text(
+              'Real-time perception · deep learning · ROS · inference APIs',
+              textAlign: textAlign,
+              style: TextStyle(fontSize: 14.5, color: AppColors.textMuted, height: 1.62, letterSpacing: 0.1),
+            ),
+          ),
+          0.16,
+        ),
+        const SizedBox(height: 32),
+        _stagger(_TerminalLog(progress: progress), 0.26),
+        const SizedBox(height: 28),
+        _stagger(_ProgressBar(progress: progress, centered: centered), 0.38),
+      ],
+    );
+  }
+}
+
+class _TerminalLog extends StatelessWidget {
+  const _TerminalLog({required this.progress});
+  final AnimationController progress;
+
+  static const _logs = [
+    ('[Vision]', 'Initializing perception graph'),
+    ('[Models]', 'Loading inference nodes'),
+    ('[ROS]', 'Linking robot channels'),
+    ('[APIs]', 'Securing transport layer'),
+    ('[UI]', 'Rendering interactive shell'),
+    ('[Ready]', 'Portfolio system online'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _dot(const Color(0xFFFF5F56)),
+              const SizedBox(width: 6),
+              _dot(const Color(0xFFFFBD2E)),
+              const SizedBox(width: 6),
+              _dot(const Color(0xFF27C93F)),
+              const SizedBox(width: 12),
+              Text('boot.sh', style: TextStyle(fontSize: 10, color: AppColors.textMuted, fontFamily: 'monospace')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: progress,
+            builder: (_, __) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _logs.asMap().entries.map((e) {
+                  final i = e.key;
+                  final entry = e.value;
+                  final threshold = i / (_logs.length + 1);
+                  final visible = progress.value >= threshold;
+                  if (!visible) return const SizedBox.shrink();
+                  final isLast = i == _logs.length - 1;
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: i < _logs.length - 1 ? 5 : 0),
+                    child: Row(
+                      children: [
+                        Text(
+                          isLast ? '✓ ' : '› ',
+                          style: TextStyle(
+                            color: isLast ? const Color(0xFF22C55E) : AppColors.accent,
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          entry.$1,
+                          style: TextStyle(
+                            color: isLast ? const Color(0xFF22C55E) : AppColors.accent.withValues(alpha: 0.7),
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            entry.$2,
+                            style: TextStyle(
+                              color: isLast ? const Color(0xFF22C55E).withValues(alpha: 0.8) : AppColors.textMuted,
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dot(Color color) =>
+      Container(width: 9, height: 9, decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.7)));
+}
+
+class _ProgressBar extends StatelessWidget {
+  const _ProgressBar({required this.progress, this.centered = false});
+  final AnimationController progress;
+  final bool centered;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: progress,
+      builder: (_, __) {
+        final pct = (progress.value * 100).round();
+        return Column(
+          crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: centered ? MainAxisAlignment.center : MainAxisAlignment.start,
+              children: [
+                Text('Loading', style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontFamily: 'monospace')),
+                const SizedBox(width: 8),
+                Text('$pct%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.accent, fontFamily: 'monospace')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: centered ? double.infinity : 300,
+              height: 2,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(1),
+                child: Stack(
+                  children: [
+                    Container(color: AppColors.borderStrong.withValues(alpha: 0.25)),
+                    FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress.value,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.accentGradientStrong,
+                          boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.5), blurRadius: 6)],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RightVisual extends StatelessWidget {
+  const _RightVisual({
+    required this.intro,
+    required this.progress,
+    required this.orbAnchorKey,
+    this.compact = false,
+  });
+  final AnimationController intro;
+  final AnimationController progress;
+  final GlobalKey orbAnchorKey;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final anim = CurvedAnimation(parent: intro, curve: const Interval(0.12, 1.0, curve: Curves.easeOutCubic));
+    final orbSz = compact ? 240.0 : 340.0;
+
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0.05, 0), end: Offset.zero).animate(anim),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: SizedBox(
+                width: orbSz,
+                height: orbSz,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(child: SizedBox(key: orbAnchorKey)),
+                    AnimatedBuilder(
+                      animation: progress,
+                      builder: (_, __) {
+                        final a = progress.value * 2 * pi;
+                        final r = orbSz * 0.44;
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _floatNode('Vision', a, r),
+                            _floatNode('Models', a + 2.09, r),
+                            _floatNode('ROS', a + 4.19, r),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const _StatusRow(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _floatNode(String label, double angle, double radius) {
+    return Transform.translate(
+      offset: Offset(cos(angle) * radius, sin(angle) * radius),
+      child: _OrbitalChip(label: label),
+    );
+  }
+}
+
+class _OrbitalChip extends StatelessWidget {
+  const _OrbitalChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+        boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.10), blurRadius: 10)],
+      ),
+      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: 0.2)),
+    );
+  }
+}
+
+class _StatusRow extends StatelessWidget {
+  const _StatusRow();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [('MODE', 'VISION'), ('STACK', 'ROS · ML'), ('STATE', 'LIVE')];
+    return Row(
+      children: items.asMap().entries.map((e) {
+        final i = e.key;
+        final item = e.value;
+        return Expanded(
+          child: Row(
+            children: [
+              if (i > 0)
+                Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 12), color: AppColors.borderStrong.withValues(alpha: 0.25)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(item.$1, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 1.5, fontFamily: 'monospace')),
+                    const SizedBox(height: 3),
+                    Text(item.$2, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: 0.2)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
 }
 
 class LottieSectionSeparator extends StatelessWidget {
@@ -953,11 +1241,6 @@ class LottieSectionSeparator extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Interactive constellation background (for sub-widgets / cards) — unchanged
-// behaviourally, kept for API compatibility with existing call sites.
-// ─────────────────────────────────────────────────────────────────────────────
 
 class InteractiveConstellationBackground extends StatefulWidget {
   const InteractiveConstellationBackground({super.key});
